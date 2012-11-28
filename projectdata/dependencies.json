@@ -1,0 +1,9 @@
+[
+    {   "name": "NuGet",
+        "type": "external",
+        "version": "1.7.30402.9028",
+        "platform-specific": false,
+        "archive-filename": "${name}.${version}.tar.gz",
+        "configure-args": []
+    }
+]
