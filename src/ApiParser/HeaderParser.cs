@@ -10,17 +10,59 @@ namespace ApiParser
 {
     [JsonObject]
     //[JsonConverter(typeof(CTypeConverter))]
-    class CType
+    public abstract class CType
     {
         [JsonProperty("qualifiers", Order=99)]
         public HashSet<string> Qualifiers { get; private set; }
-        public CType()
+        protected CType()
         {
             Qualifiers = new HashSet<string>();
         }
+
+        public virtual string FundamentalType()
+        {
+            throw new NotImplementedException();
+        }
+
+        [JsonIgnore]
+        public virtual CType ChildType { get { return null; } }
+
+        public override string ToString()
+        {
+            return CreateDeclaration("");
+        }
+
+        public string CreateDeclaration(string aIdentifier)
+        {
+            var fundamental = FundamentalType();
+            List<string> prefix = new List<string>();
+            List<string> suffix = new List<string>();
+            List<CType> typeChain = new List<CType>();
+            CType current = this;
+            while (current != null)
+            {
+                typeChain.Add(current);
+                current = current.ChildType;
+            }
+            foreach (var t in typeChain)
+            {
+                t.ConstructDeclaration(prefix, suffix);
+            }
+
+            prefix.Reverse();
+            string space = aIdentifier == "" ? "" : " ";
+            return String.Format("{0}{1}{2}{3}{4}",
+                fundamental,
+                space,
+                String.Join("", prefix),
+                aIdentifier,
+                String.Join("", suffix));
+        }
+
+        protected abstract void ConstructDeclaration(List<string> aPrefix, List<string> aSuffix);
     }
 
-    class CTypeConverter : JsonCreationConverter<CType>
+    public class CTypeConverter : JsonCreationConverter<CType>
     {
         protected override CType Create(Type objectType, JObject jObject)
         {
@@ -90,33 +132,48 @@ namespace ApiParser
 
 
     [JsonObject]
-    class NamedCType : CType
+    public class NamedCType : CType
     {
         [JsonProperty("kind", Order=1)]
         public string Kind { get { return "named-type"; } }
         [JsonProperty("name", Order=2)]
         public string Name { get; set; }
-        /*public override string  ToString()
+        public override string FundamentalType()
         {
-            return String.Format(
-                @"{{""kind"":""namedtype"", ""name"":""{0}""}}", Name);
-        }*/
+            return Name;
+        }
+        public override string  ToString()
+        {
+            return Name;
+        }
+        protected override void ConstructDeclaration(List<string> aPrefix, List<string> aSuffix)
+        {
+            return;
+        }
     }
     [JsonObject]
-    class PointerCType : CType
+    public class PointerCType : CType
     {
         [JsonProperty("kind", Order=1)]
         public string Kind { get { return "pointer"; } }
         [JsonProperty("to", Order=2)]
         public CType BaseType { get; set; }
-        /*public override string  ToString()
+        public override CType ChildType { get { return BaseType; } }
+        public override string FundamentalType()
         {
-            return String.Format(
-                @"{{""kind"":""pointer"", ""to"":{0}}}", BaseType);
-        }*/
+            return BaseType.FundamentalType();
+        }
+        public override string ToString()
+        {
+            return BaseType.ToString() + "*";
+        }
+        protected override void ConstructDeclaration(List<string> aPrefix, List<string> aSuffix)
+        {
+            aPrefix.Add("*");
+        }
     }
     [JsonObject]
-    class ArrayCType : CType
+    public class ArrayCType : CType
     {
         [JsonProperty("kind", Order=1)]
         public string Kind { get { return "array"; } }
@@ -124,14 +181,23 @@ namespace ApiParser
         public int? Dimension { get; set; }
         [JsonProperty("of", Order=3)]
         public CType BaseType { get; set; }
-        /*public override string  ToString()
+        public override CType ChildType { get { return BaseType; } }
+        public override string FundamentalType()
         {
-            return String.Format(
-                @"{{""kind"":""array"", ""dimension"":{0}, ""of"":{1}}}", Dimension, BaseType);
-        }*/
+            return BaseType.FundamentalType();
+        }
+        protected override void ConstructDeclaration(List<string> aPrefix, List<string> aSuffix)
+        {
+            if ((aPrefix.LastOrDefault() ?? "").StartsWith("*"))
+            {
+                aPrefix.Add("(");
+                aSuffix.Add(")");
+            }
+            aSuffix.Add("[" + Dimension + "]");
+        }
     }
     [JsonObject]
-    class FunctionCType : CType
+    public class FunctionCType : CType
     {
         [JsonProperty("kind", Order=1)]
         public string Kind { get { return "function"; } }
@@ -139,16 +205,24 @@ namespace ApiParser
         public List<Declaration> Arguments { get; set; }
         [JsonProperty("returning", Order=3)]
         public CType ReturnType { get; set; }
-        /*public override string  ToString()
+        public override CType ChildType { get { return ReturnType; } }
+        public override string FundamentalType()
         {
-            return String.Format(
-                @"{{""kind"":""function"", ""arguments"":[{0}], ""returning"":{1}}}",
-                String.Join(", ", Arguments.Select(x=>x.ToString())),
-                ReturnType);
-        }*/
+            return ReturnType.FundamentalType();
+        }
+        protected override void ConstructDeclaration(List<string> aPrefix, List<string> aSuffix)
+        {
+            if ((aPrefix.LastOrDefault() ?? "").StartsWith("*"))
+            {
+                aPrefix.Add("(");
+                aSuffix.Add(")");
+            }
+            var args = String.Join(", ", Arguments.Select(x=>x.CType.CreateDeclaration(x.Name)));
+            aSuffix.Add("(" + args + ")");
+        }
     }
     [JsonObject]
-    class StructCType : CType
+    public class StructCType : CType
     {
         [JsonProperty("kind", Order=1)]
         public string Kind { get { return "struct"; } }
@@ -158,17 +232,17 @@ namespace ApiParser
         public List<Declaration> Fields { get; set; }
         [JsonIgnore]
         public bool IsForward { get { return Fields == null; } }
-        /*public override string  ToString()
+        public override string FundamentalType()
         {
-            string fields = IsForward ? "null" : ("["+String.Join(", ", Fields.Select(x => x.ToString()))+"]");
-            return String.Format(
-                @"{{""kind"":""struct"", ""tag"":{0}, ""fields"":{1}}}",
-                Tag,
-                fields);
-        }*/
+            return "struct " + Tag;
+        }
+        protected override void ConstructDeclaration(List<string> aPrefix, List<string> aSuffix)
+        {
+            return;
+        }
     }
     [JsonObject]
-    class EnumCType : CType
+    public class EnumCType : CType
     {
         [JsonProperty("kind", Order=1)]
         public string Kind { get { return "enum"; } }
@@ -176,21 +250,21 @@ namespace ApiParser
         public string Tag { get; set; }
         [JsonProperty("constants", Order=3)]
         public List<EnumConstant> Constants { get; set; }
-        /*public override string ToString()
+        public override string FundamentalType()
         {
-            return String.Format(
-                @"{{""kind"":""enum"", ""tag"":""{0}"", ""constants"":[{1}]}}",
-                Tag,
-                String.Join(", ", Constants.Select(x=>x.ToString())));
-
-        }*/
+            return "enum " + Tag;
+        }
+        protected override void ConstructDeclaration(List<string> aPrefix, List<string> aSuffix)
+        {
+            return;
+        }
     }
     interface IHasComment
     {
         string RawComment { get; set; }
     }
     [JsonObject]
-    class Declaration : IHasComment
+    public class Declaration : IHasComment
     {
         [JsonProperty("name", Order=1)]
         public string Name { get; set; }
@@ -201,16 +275,13 @@ namespace ApiParser
         [JsonProperty("type", Order=4)]
         public CType CType { get; set; }
 
-        /*public override string ToString()
+        public override string ToString()
         {
-            return String.Format(
-                @"{{""name"":""{0}"", ""raw-comment"":{1}, ""type"":{2}}}",
-                Name,
-                RawComment == null ? "null" : HeaderParser.ToJsonString(RawComment),
-                Type);
-        }*/
+            return CType.CreateDeclaration(Name);
+        }
     }
-    class EnumConstant : IHasComment
+
+    public class EnumConstant : IHasComment
     {
         public string Name { get; set; }
         public int Value { get; set; }
