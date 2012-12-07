@@ -65,6 +65,7 @@ namespace ManagedApiBuilder
         public OrderedDictionary<string, FunctionCType> FunctionTable { get; private set; }
         public OrderedDictionary<string, StructCType> StructTable { get; private set; }
         public OrderedDictionary<string, EnumCType> EnumTable { get; private set; }
+        public OrderedDictionary<string, FunctionCType> FunctionTypedefTable { get; private set; }
         public HashSet<string> HandleTable { get; private set; }
 
         public CategorizedDeclarations()
@@ -72,6 +73,7 @@ namespace ManagedApiBuilder
             FunctionTable = new OrderedDictionary<string, FunctionCType>();
             StructTable = new OrderedDictionary<string, StructCType>();
             EnumTable = new OrderedDictionary<string, EnumCType>();
+            FunctionTypedefTable = new OrderedDictionary<string, FunctionCType>();
             HandleTable = new HashSet<string>();
         }
 
@@ -84,6 +86,7 @@ namespace ManagedApiBuilder
                 {
                     StructCType structType = decl.CType as StructCType;
                     EnumCType enumType = decl.CType as EnumCType;
+                    FunctionCType functionType = decl.CType as FunctionCType;
                     if (structType != null)
                     {
                         if (structType.Fields == null)
@@ -99,6 +102,10 @@ namespace ManagedApiBuilder
                     {
                         EnumTable.Add(decl.Name, enumType);
                     }
+                    else if (functionType != null)
+                    {
+                        FunctionTypedefTable.Add(decl.Name, functionType);
+                    }
                 }
                 else if (decl.Kind == "instance")
                 {
@@ -107,6 +114,33 @@ namespace ManagedApiBuilder
                     FunctionTable.Add(decl.Name, funcType);
                 }
             }
+        }
+
+        public OrderedDictionary<string, FunctionCType> FindAnonymousDelegates()
+        {
+            OrderedDictionary<string, FunctionCType> results = new OrderedDictionary<string, FunctionCType>();
+            foreach (var kvp in StructTable)
+            {
+                var structName = kvp.Key;
+                var structType = kvp.Value;
+                foreach (var fieldDeclaration in structType.Fields)
+                {
+                    var fieldName = fieldDeclaration.Name;
+                    var fieldType = fieldDeclaration.CType;
+                    var pointerType = fieldType as PointerCType;
+                    if (pointerType != null)
+                    {
+                        var pointedType = pointerType.BaseType;
+                        var functionType = pointedType as FunctionCType;
+                        if (functionType != null)
+                        {
+                            // What if there are duplicate names!?
+                            results.Add(fieldName, functionType);
+                        }
+                    }
+                }
+            }
+            return results;
         }
 
         public void CategorizeFunctions(
@@ -154,24 +188,68 @@ namespace ManagedApiBuilder
 
     class CSharpGenerator
     {
+        /*const string FunctionDeclarationTemplate =
+            "{0}[DllImport(\"spotify\")]\n" +
+            "{0}{1}{2} {3}({4});\n";
+        const string DllImportModifiers = "internal static extern ";
+        const string RawDelegateModifiers = "internal delegate ";*/
         const string DllImportTemplate =
             "{0}[DllImport(\"spotify\")]\n" +
             "{0}internal static extern {1} {2}({3});\n";
+        const string RawDelegateTemplate =
+            "{0}internal delegate {1} {2}({3});\n";
 
         HashSet<string> iEnumNames;
+        HashSet<string> iStructNames;
+        HashSet<string> iHandleNames;
+        HashSet<string> iDelegateNames;
 
-        public CSharpGenerator(IEnumerable<string> aEnumNames)
+        public CSharpGenerator(IEnumerable<string> aEnumNames, IEnumerable<string> aStructNames, IEnumerable<string> aHandleNames, IEnumerable<string> aDelegateNames)
         {
             iEnumNames = new HashSet<string>(aEnumNames);
+            iStructNames = new HashSet<string>(aStructNames);
+            iHandleNames = new HashSet<string>(aHandleNames);
+            iDelegateNames = new HashSet<string>(aDelegateNames);
         }
 
-        string GetCSharpMarshalType(CType aType)
+        string GetCSharpMarshalType(CType aType, bool aAsParameter)
         {
             var pointerType = aType as PointerCType;
             var namedType = aType as NamedCType;
             var arrayType = aType as ArrayCType;
             if (pointerType != null)
             {
+                if (!aAsParameter)
+                {
+                    return "IntPtr";
+                }
+                var pointedToType = pointerType.BaseType as NamedCType;
+                if (pointedToType != null)
+                {
+                    string typeName = pointedToType.Name;
+                    if (iStructNames.Contains(typeName))
+                    {
+                        return "ref " + pointedToType.Name;
+                    }
+                    if (iEnumNames.Contains(typeName))
+                    {
+                        return "ref " + pointedToType.Name;
+                    }
+                    if (iHandleNames.Contains(typeName))
+                    {
+                        return "IntPtr";
+                    }
+                    if (iDelegateNames.Contains(typeName))
+                    {
+                        return typeName; // DelegateNameFromTypedef??
+                    }
+                    if (typeName == "void") return "IntPtr";
+                    if (typeName == "int") return "ref int";
+                    if (typeName == "char") return "IntPtr";
+                    if (typeName == "byte") return "IntPtr";
+                    if (typeName == "size_t") return "UIntPtr";
+                    return "/* ??? */ IntPtr";
+                }
                 return "IntPtr";
             }
             if (namedType != null)
@@ -206,6 +284,17 @@ namespace ManagedApiBuilder
 
         public string GenerateDllImportFunction(string aIndent, string aFunctionName, FunctionCType aFunctionType)
         {
+            return GenerateFunctionDeclaration(
+                aIndent, DllImportTemplate, aFunctionName, aFunctionType);
+        }
+        public string GenerateRawDelegate(string aIndent, string aFunctionName, FunctionCType aFunctionType)
+        {
+            return GenerateFunctionDeclaration(
+                aIndent, RawDelegateTemplate, aFunctionName, aFunctionType);
+        }
+
+        string GenerateFunctionDeclaration(string aIndent, string aTemplate, string aFunctionName, FunctionCType aFunctionType)
+        {
             string argString;
             if (aFunctionType.Arguments.Count == 1 && aFunctionType.Arguments[0].CType.ToString() == "void")
             {
@@ -213,11 +302,53 @@ namespace ManagedApiBuilder
             }
             else
             {
-                var args = aFunctionType.Arguments.Select(x => GetCSharpMarshalType(x.CType) + " @" + x.Name);
+                var args = aFunctionType.Arguments.Select(x => GetCSharpMarshalType(x.CType, true) + " @" + x.Name);
                 argString = String.Join(", ", args.ToArray());
             }
-            string returnType = GetCSharpMarshalType(aFunctionType.ReturnType);
-            return String.Format(DllImportTemplate, aIndent, returnType, aFunctionName, argString);
+            string returnType = GetCSharpMarshalType(aFunctionType.ReturnType, false);
+            return String.Format(aTemplate, aIndent, returnType, aFunctionName, argString);
+        }
+
+        IEnumerable<string> SplitName(string aName)
+        {
+            return aName.Split('_');
+        }
+
+        string PascalCase(string aFragment)
+        {
+            return aFragment.Substring(0, 1).ToUpperInvariant() + aFragment.Substring(1).ToLowerInvariant();
+        }
+
+        string PascalCase(IEnumerable<string> aFragments)
+        {
+            return String.Join("", aFragments.Select(PascalCase));
+        }
+
+        string CamelCase(IEnumerable<string> aFragments)
+        {
+            var fragments = aFragments.ToList();
+            var first = fragments[0].ToLowerInvariant();
+            var remaining = fragments.Skip(1).Select(PascalCase);
+            return first + String.Join("", remaining);
+        }
+
+        string PascalCaseMemberName(string aParentName, string aMemberName)
+        {
+            //if (!aMemberName.ToUpperInvariant().StartsWith(aParentName.ToUpperInvariant() + "_")) throw new Exception("Bad member name: " + aMemberName);
+            //string trimmedName = aMemberName.Substring(aParentName.Length + 1);
+            string trimmedName = aMemberName;
+            return PascalCase(SplitName(trimmedName));
+        }
+
+        public string GenerateCSharpWrappingMethod(string aIndent, string aFunctionName, string aClassName, FunctionCType aFunctionType)
+        {
+            if (!aFunctionName.StartsWith(aClassName+"_"))
+            {
+                return aIndent + "// Bad method " + aFunctionName;
+            }
+            var methodName = PascalCase(SplitName(aFunctionName.Substring(aClassName.Length+1)));
+
+            return "";
         }
 
         const string EnumTemplate =
@@ -232,10 +363,16 @@ namespace ManagedApiBuilder
 
         public string GenerateEnumDeclaration(string aIndent, string aEnumName, EnumCType aEnumType)
         {
-            var constantStrings = aEnumType.Constants.Select(x => String.Format(EnumConstantTemplate, aIndent + SingleIndent, x.Name, x.Value));
+            var constantStrings = aEnumType.Constants.Select(x =>
+                String.Format(
+                    EnumConstantTemplate,
+                    aIndent + SingleIndent,
+                    PascalCaseMemberName(aEnumName, x.Name),
+                    x.Value));
             var joinedConstantStrings = String.Join("", constantStrings);
             return String.Format(EnumTemplate, aIndent, aEnumName, joinedConstantStrings);
         }
+
     }
 
 
@@ -256,6 +393,7 @@ namespace ManagedApiBuilder
             OrderedDictionary<string, SpotifyClass> classes;
             OrderedDictionary<string, FunctionCType> functions;
             categorizedDeclarations.CategorizeFunctions(out classes, out functions);
+            var anonymousDelegates = categorizedDeclarations.FindAnonymousDelegates();
             /*
             foreach (var kvpClass in classes.OrderBy(x=>x.Key))
             {
@@ -277,15 +415,53 @@ namespace ManagedApiBuilder
                 Console.WriteLine("    {0}({1} arg(s))", functionName, functionSignature.Arguments.Count);
             }
              * */
-            CSharpGenerator gen = new CSharpGenerator(categorizedDeclarations.EnumTable.Keys);
+            CSharpGenerator gen = new CSharpGenerator(
+                categorizedDeclarations.EnumTable.Keys,
+                categorizedDeclarations.StructTable.Keys,
+                categorizedDeclarations.HandleTable,
+                categorizedDeclarations.FunctionTypedefTable.Keys);
             Console.WriteLine("using System;");
             Console.WriteLine("using System.Runtime.InteropServices;");
             Console.WriteLine("namespace Stuff");
             Console.WriteLine("{");
+            Console.WriteLine("");
+            Console.WriteLine("    // Enums");
             foreach (var kvpEnum in categorizedDeclarations.EnumTable)
             {
                 Console.Write(gen.GenerateEnumDeclaration("    ", kvpEnum.Key, kvpEnum.Value));
             }
+            Console.WriteLine("");
+            Console.WriteLine("    // Named delegates");
+            foreach (var kvpDelegate in categorizedDeclarations.FunctionTypedefTable)
+            {
+                Console.Write(gen.GenerateRawDelegate("    ", kvpDelegate.Key, kvpDelegate.Value));
+            }
+            Console.WriteLine("");
+            Console.WriteLine("    // Un-named delegates");
+            foreach (var kvpDelegate in anonymousDelegates)
+            {
+                Console.Write(gen.GenerateRawDelegate("    ", kvpDelegate.Key, kvpDelegate.Value));
+            }
+            /*
+            foreach (var kvpStruct in categorizedDeclarations.StructTable)
+            {
+                var structName = kvpStruct.Key;
+                var structType = kvpStruct.Value;
+                foreach (var field in structType.Fields)
+                {
+                    var pointerType = field.CType as PointerCType;
+                    if (pointerType != null)
+                    {
+                        var functionType = pointerType.BaseType as FunctionCType;
+                        if (functionType != null)
+                        {
+                            // Delegate!
+                            gen.GenerateDelegateDeclaration(field.Name, functionType);
+                        }
+                    }
+                }
+                structType.Fields
+            }*/
             Console.WriteLine("    class NativeMethods");
             Console.WriteLine("    {");
             foreach (var kvpFunction in categorizedDeclarations.FunctionTable)
