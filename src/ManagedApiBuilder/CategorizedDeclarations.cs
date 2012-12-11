@@ -11,21 +11,24 @@ namespace ManagedApiBuilder
         public OrderedDictionary<string, EnumCType> EnumTable { get; private set; }
         public OrderedDictionary<string, FunctionCType> FunctionTypedefTable { get; private set; }
         public HashSet<string> HandleTable { get; private set; }
+        public HashSet<string> DeclarationsToIgnore { get; private set; }
 
-        public CategorizedDeclarations()
+        public CategorizedDeclarations(IEnumerable<string> aDeclarationsToIgnore)
         {
             FunctionTable = new OrderedDictionary<string, FunctionCType>();
             StructTable = new OrderedDictionary<string, StructCType>();
             EnumTable = new OrderedDictionary<string, EnumCType>();
             FunctionTypedefTable = new OrderedDictionary<string, FunctionCType>();
             HandleTable = new HashSet<string>();
+            DeclarationsToIgnore = new HashSet<string>(aDeclarationsToIgnore);
         }
 
         public void AddDeclarations(IEnumerable<Declaration> aDeclarations)
         {
             foreach (var decl in aDeclarations)
             {
-                if (decl.Name == "sp_uint64" || decl.Name == "bool" || decl.Name == "byte") continue;
+                if (DeclarationsToIgnore.Contains(decl.Name)) continue;
+                //== "sp_uint64" || decl.Name == "bool" || decl.Name == "byte") continue;
                 if (decl.Kind == "typedef")
                 {
                     StructCType structType = decl.CType as StructCType;

@@ -64,7 +64,7 @@ namespace ManagedApiBuilder
         const string DllImportModifiers = "internal static extern ";
         const string RawDelegateModifiers = "internal delegate ";*/
         const string DllImportTemplate =
-            "{0}[DllImport(\"spotify\")]\n" +
+            "{0}[DllImport(\"libspotify\")]\n" +
             "{4}" +
             "{0}internal static extern {1} {2}({3});\n";
         const string RawDelegateTemplate =
@@ -75,13 +75,44 @@ namespace ManagedApiBuilder
         HashSet<string> iStructNames;
         HashSet<string> iHandleNames;
         HashSet<string> iDelegateNames;
+        Dictionary<string, ApiStructConfiguration> iStructConfigurations;
+        Dictionary<string, ApiEnumConfiguration> iEnumConfigurations;
 
-        public CSharpGenerator(IEnumerable<string> aEnumNames, IEnumerable<string> aStructNames, IEnumerable<string> aHandleNames, IEnumerable<string> aDelegateNames)
+        public CSharpGenerator(
+            IEnumerable<string> aEnumNames,
+            IEnumerable<string> aStructNames,
+            IEnumerable<string> aHandleNames,
+            IEnumerable<string> aDelegateNames,
+            IEnumerable<ApiStructConfiguration> aStructConfigurations,
+            IEnumerable<ApiEnumConfiguration> aEnumConfigurations)
         {
             iEnumNames = new HashSet<string>(aEnumNames);
             iStructNames = new HashSet<string>(aStructNames);
             iHandleNames = new HashSet<string>(aHandleNames);
             iDelegateNames = new HashSet<string>(aDelegateNames);
+            iStructConfigurations = aStructConfigurations.ToDictionary(x => x.NativeName);
+            iEnumConfigurations = aEnumConfigurations.ToDictionary(x => x.NativeName);
+        }
+
+        string ManagedNameForNativeType(string aNativeTypeName)
+        {
+            ApiStructConfiguration structConfig;
+            if (iStructConfigurations.TryGetValue(aNativeTypeName, out structConfig))
+            {
+                return structConfig.ManagedName ?? aNativeTypeName;
+            }
+            ApiEnumConfiguration enumConfig;
+            if (iEnumConfigurations.TryGetValue(aNativeTypeName, out enumConfig))
+            {
+                return enumConfig.ManagedName ?? aNativeTypeName;
+            }
+            // Delegate??
+            // Handle??
+            if (iEnumNames.Contains(aNativeTypeName))
+            {
+                return DefaultManagedEnumName(aNativeTypeName);
+            }
+            return aNativeTypeName;
         }
 
         CSharpType GetCSharpMarshalType(CType aType, string aName, bool aAsParameter)
@@ -102,17 +133,22 @@ namespace ManagedApiBuilder
                 {
                     return new CSharpType("IntPtr");
                 }
+                var pointerPointerType = pointerType.BaseType as PointerCType;
+                if (pointerPointerType != null)
+                {
+                    return new CSharpType("IntPtr") { IsRef = true };
+                }
                 var pointedToType = pointerType.BaseType as NamedCType;
                 if (pointedToType != null)
                 {
                     string typeName = pointedToType.Name;
                     if (iStructNames.Contains(typeName))
                     {
-                        return new CSharpType(pointedToType.Name) { IsRef = true };
+                        return new CSharpType(ManagedNameForNativeType(pointedToType.Name)) { IsRef = true };
                     }
                     if (iEnumNames.Contains(typeName))
                     {
-                        return new CSharpType(pointedToType.Name) { IsRef = true };
+                        return new CSharpType(ManagedNameForNativeType(pointedToType.Name)) { IsRef = true };
                     }
                     if (iHandleNames.Contains(typeName))
                     {
@@ -120,7 +156,7 @@ namespace ManagedApiBuilder
                     }
                     if (iDelegateNames.Contains(typeName))
                     {
-                        return new CSharpType(typeName); // DelegateNameFromTypedef??
+                        return new CSharpType(ManagedNameForNativeType(typeName));
                     }
                     if (typeName == "void") return new CSharpType("IntPtr");
                     if (typeName == "int") return new CSharpType("int") { IsRef = true };
@@ -142,8 +178,6 @@ namespace ManagedApiBuilder
                         return new CSharpType("int");
                     case "bool":
                         return new CSharpType("bool") { Attributes = { "MarshalAs(UnmanagedType.I1)" } };
-                    case "sp_error":
-                        return new CSharpType("sp_error");
                     case "size_t":
                         return new CSharpType("UIntPtr");
                     case "sp_uint64":
@@ -151,7 +185,7 @@ namespace ManagedApiBuilder
                 }
                 if (iEnumNames.Contains(namedType.Name))
                 {
-                    return new CSharpType(namedType.Name);
+                    return new CSharpType(ManagedNameForNativeType(namedType.Name));
                 }
                 throw new Exception("Don't know how to marshal type: " + namedType.Name);
             }
@@ -200,6 +234,9 @@ namespace ManagedApiBuilder
 
         string PascalCase(string aFragment)
         {
+            if (aFragment.Length == 0)
+                return "";
+            //Console.WriteLine("PascalCase:[{0}]", aFragment);
             return aFragment.Substring(0, 1).ToUpperInvariant() + aFragment.Substring(1).ToLowerInvariant();
         }
 
@@ -245,16 +282,49 @@ namespace ManagedApiBuilder
 
         const string SingleIndent = "    ";
 
+        static string DropPrefix(string aString, string aPrefix)
+        {
+            if (!aString.StartsWith(aPrefix))
+            {
+                throw new Exception(String.Format("Expected '{0}' to start with '{1}'.", aString, aPrefix));
+            }
+            var retval = aString.Substring(aPrefix.Length);
+            //Console.WriteLine("DropPrefix([{0}], [{1}]) -> {2}", aString, aPrefix, retval);
+            return retval;
+        }
+
+        string DefaultManagedEnumName(string aNativeName)
+        {
+            if (aNativeName.StartsWith("sp_"))
+            {
+                aNativeName = aNativeName.Substring(3);
+            }
+            return PascalCase(SplitName(aNativeName));
+        }
+
+        string DefaultNativeConstantPrefix(string aNativeName)
+        {
+            return aNativeName.ToUpperInvariant() + "_";
+        }
+
         public string GenerateEnumDeclaration(string aIndent, string aEnumName, EnumCType aEnumType)
         {
+            ApiEnumConfiguration configuration;
+            iEnumConfigurations.TryGetValue(aEnumName, out configuration);
+            string managedName = configuration != null ? configuration.ManagedName : null;
+            managedName = managedName ?? DefaultManagedEnumName(aEnumName);
+            string memberPrefix = configuration != null ? configuration.NativeConstantPrefix : null;
+            memberPrefix = memberPrefix ?? DefaultNativeConstantPrefix(aEnumName);
+            string managedMemberPrefix = configuration != null ? configuration.ManagedConstantPrefix : null;
+            managedMemberPrefix = managedMemberPrefix ?? "";
             var constantStrings = aEnumType.Constants.Select(x =>
                 String.Format(
                     EnumConstantTemplate,
                     aIndent + SingleIndent,
-                    PascalCaseMemberName(aEnumName, x.Name),
+                    managedMemberPrefix + PascalCaseMemberName(aEnumName, DropPrefix(x.Name, memberPrefix)),
                     x.Value));
             var joinedConstantStrings = String.Join("", constantStrings);
-            return String.Format(EnumTemplate, aIndent, aEnumName, joinedConstantStrings);
+            return String.Format(EnumTemplate, aIndent, managedName, joinedConstantStrings);
         }
 
         const string StructTemplate =
@@ -273,7 +343,7 @@ namespace ManagedApiBuilder
                     var csharpType = GetCSharpMarshalType(x.CType, x.Name, false);
                     var attribute = csharpType.CreateFieldAttribute();
                     if (attribute != "")
-                        attribute = aIndent + attribute + "\n";
+                        attribute = aIndent + SingleIndent + attribute + "\n";
                     return String.Format(
                         StructFieldTemplate,
                         aIndent + SingleIndent,
