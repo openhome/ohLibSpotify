@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using ApiParser;
 using Newtonsoft.Json;
@@ -45,6 +46,34 @@ namespace ManagedApiBuilder
 
     class Program
     {
+        static void Main2(string[] args)
+        {
+            var transformers = new List<IArgumentTransformer>{
+                new StringReturnTransformer(),
+                new StringArgumentTransformer(),
+                new TrivialArgumentTransformer(),
+                new RefArgumentTransformer() };
+            Declaration arg1 = new Declaration { Name = "inputString", Kind = "instance", CType = new PointerCType(new NamedCType("char")) };
+            Declaration arg2 = new Declaration { Name = "flag1", Kind = "instance", CType = new NamedCType("bool") };
+            Declaration arg3 = new Declaration { Name = "ptrToInt", Kind = "instance", CType = new PointerCType(new NamedCType("int")) };
+            //Console.WriteLine(stringTransformer.CanApply(arg1, null, null));
+            Declaration arg4 = new Declaration { Name = "outputString", Kind = "instance", CType = new PointerCType(new NamedCType("char")) };
+            Declaration arg5 = new Declaration { Name = "bufferLength", Kind = "instance", CType = new NamedCType("size_t") };
+            CType retType = new NamedCType("int");
+            List<Declaration> arguments = new List<Declaration> { arg1, arg2, arg3, arg4, arg5 };
+            var assembler = new FunctionAssembler("my_function", "MyFunction");
+            var nativeFunction = new FunctionSpecificationAnalyser(arguments, retType);
+            while (nativeFunction.CurrentParameter != null)
+            {
+                var transformer = transformers.FirstOrDefault(x=>x.Apply(nativeFunction, assembler));
+                if (transformer == null)
+                {
+                    throw new Exception("Could not handle all arguments.");
+                }
+                assembler.NextArgument();
+            }
+            Console.WriteLine(assembler.GenerateWrapperMethod("    "));
+        }
         static void Main(string[] args)
         {
             var text = File.ReadAllText(args[0]);
@@ -107,6 +136,26 @@ namespace ManagedApiBuilder
                 Console.Write(gen.GenerateDllImportFunction("        ", functionName, functionSignature));
             }
             Console.WriteLine("    }");
+            Console.WriteLine("");
+            Console.WriteLine("    // Classes");
+            foreach (var kvpClass in classes)
+            {
+                string name = kvpClass.Key;
+                var spotifyClass = kvpClass.Value;
+                Console.WriteLine("    public partial class {0}", name);
+                Console.WriteLine("    {");
+                Console.WriteLine("        IntPtr _handle;");
+                Console.WriteLine("        internal {0}(IntPtr handle)", name);
+                Console.WriteLine("        {");
+                Console.WriteLine("            this._handle = handle;");
+                Console.WriteLine("        }");
+                Console.WriteLine("");
+                foreach (var kvpFunction in spotifyClass.NativeFunctions)
+                {
+                    Console.WriteLine(gen.GenerateCSharpWrappingMethod("        ", kvpFunction.Key, name, kvpFunction.Value));
+                }
+                Console.WriteLine("    }");
+            }
             Console.WriteLine("}");
         }
     }

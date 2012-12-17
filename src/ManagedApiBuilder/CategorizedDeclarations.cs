@@ -119,12 +119,12 @@ namespace ManagedApiBuilder
     class SpotifyClass
     {
         public string HandleName { get; private set; }
-        public Dictionary<string, FunctionCType> NativeFunctions { get; private set; }
+        public OrderedDictionary<string, FunctionCType> NativeFunctions { get; private set; }
 
         public SpotifyClass(string aHandleName)
         {
             HandleName = aHandleName;
-            NativeFunctions = new Dictionary<string, FunctionCType>();
+            NativeFunctions = new OrderedDictionary<string, FunctionCType>();
         }
 
         public void AddFunction(string aName, FunctionCType aFunction)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -150,6 +151,14 @@ namespace ApiParser
         {
             return;
         }
+
+        public NamedCType()
+        {
+        }
+        public NamedCType(string aName)
+        {
+            Name = aName;
+        }
     }
     [JsonObject]
     public class PointerCType : CType
@@ -170,6 +179,14 @@ namespace ApiParser
         protected override void ConstructDeclaration(List<string> aPrefix, List<string> aSuffix)
         {
             aPrefix.Add("*");
+        }
+
+        public PointerCType()
+        {
+        }
+        public PointerCType(CType aBaseType)
+        {
+            BaseType = aBaseType;
         }
     }
     [JsonObject]
@@ -194,6 +211,15 @@ namespace ApiParser
                 aSuffix.Add(")");
             }
             aSuffix.Add("[" + Dimension + "]");
+        }
+
+        public ArrayCType()
+        {
+        }
+        public ArrayCType(int? aDimension, CType aBaseType)
+        {
+            Dimension = aDimension;
+            BaseType = aBaseType;
         }
     }
     [JsonObject]
@@ -220,6 +246,15 @@ namespace ApiParser
             var args = String.Join(", ", Arguments.Select(x=>x.CType.CreateDeclaration(x.Name)));
             aSuffix.Add("(" + args + ")");
         }
+
+        public FunctionCType()
+        {
+        }
+        public FunctionCType(CType aReturnType)
+        {
+            Arguments = new List<Declaration>();
+            ReturnType = aReturnType;
+        }
     }
     [JsonObject]
     public class StructCType : CType
@@ -240,9 +275,18 @@ namespace ApiParser
         {
             return;
         }
+
+        public StructCType()
+        {
+        }
+        public StructCType(string aTag)
+        {
+            Tag = aTag;
+            Fields = new List<Declaration>();
+        }
     }
     [JsonObject]
-    public class EnumCType : CType
+    public class EnumCType : CType, IEnumerable
     {
         [JsonProperty("kind", Order=1)]
         public string Kind { get { return "enum"; } }
@@ -257,6 +301,24 @@ namespace ApiParser
         protected override void ConstructDeclaration(List<string> aPrefix, List<string> aSuffix)
         {
             return;
+        }
+
+        public EnumCType()
+        {
+        }
+        public EnumCType(string aTag)
+        {
+            Tag = aTag;
+            Constants = new List<EnumConstant>();
+        }
+        public void Add(string aName, int aValue)
+        {
+            Constants.Add(new EnumConstant { Name = aName, Value = aValue });
+        }
+
+        public IEnumerator GetEnumerator()
+        {
+            return Constants.GetEnumerator();
         }
     }
     interface IHasComment
