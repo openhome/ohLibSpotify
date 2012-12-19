@@ -46,7 +46,11 @@
   <ItemGroup>
     <Compile Include="CategorizedDeclarations.cs" />
     <Compile Include="CSharpGenerator.cs" />
+    <Compile Include="FunctionAssembler.cs" />
+    <Compile Include="FunctionSpecificationAnalyser.cs" />
+    <Compile Include="IArgumentTransformer.cs" />
     <Compile Include="OrderedDictionary.cs" />
+    <Compile Include="PatternMatching.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -267,7 +267,7 @@ namespace SpotifySharp
                 Console.WriteLine("notify_main_thread(session)");
                 iEv.Set();
             }
-            int music_delivery(IntPtr session, ref sp_audioformat format, IntPtr frames, int num_frames)
+            int music_delivery(IntPtr session, ref AudioFormat format, IntPtr frames, int num_frames)
             {
                 Console.WriteLine("music(session, fmt={0}, frame_ptr={1}, count={2}, channels={3}, rate={4}, type={5})", format, frames, num_frames, format.channels, format.sample_rate, format.sample_type);
                 if (format.sample_type != SampleType.Int16NativeEndian)
@@ -317,7 +317,7 @@ namespace SpotifySharp
             {
                 Console.WriteLine("stop_playback");
             }
-            void get_audio_buffer_stats(IntPtr session, ref sp_audio_buffer_stats stats)
+            void get_audio_buffer_stats(IntPtr session, ref AudioBufferStats stats)
             {
                 stats.stutter = 0;
                 stats.samples = 4096;
@@ -356,6 +356,314 @@ namespace SpotifySharp
         }
 
         static void Main(string[] args)
+        {
+            ManualResetEvent ev = new ManualResetEvent(false);
+            //CallbackAgent agent = new CallbackAgent(ev);
+            byte[] appkey = File.ReadAllBytes("spotify_appkey.key");
+            var callbacks = new Callbacks2(ev);
+            var config = new SpotifySessionConfig
+            {
+                ApiVersion = 12,
+                ApplicationKey = appkey,
+                CacheLocation = "tmpdirabcd2",
+                Listener = callbacks,
+                CompressPlaylists = false,
+                DontSaveMetadataForPlaylists = false,
+                InitiallyUnloadPlaylists = false,
+                SettingsLocation = "settingsdirwxyz2",
+                UserAgent = ".NET test program 2"
+            };
+            using (var session = SpotifySession.Create(config))
+            {
+                Console.WriteLine("Created");
+                Console.Write("username:");
+                string username = Console.ReadLine();
+                Console.Write("password:");
+                string password = Console.ReadLine();
+
+                session.Login(username, password, false, null);
+
+                Console.WriteLine("Login started");
+
+                bool finished = false;
+
+                int timeout = 0;
+                var consoleThread = new Thread(() =>
+                {
+                    while (true)
+                    {
+                        Console.WriteLine("Track URI:");
+                        var uri = Console.ReadLine().Trim();
+                        finished = true;
+                        ev.Set();
+                        break;
+                        /*if (uri != "")
+                        {
+                            agent.QueueTrack(uri);
+                        }
+                        else
+                        {
+                            agent.Stop();
+                        }*/
+                    }
+                });
+                consoleThread.Start();
+
+                while (!finished)
+                {
+                    ev.WaitOne(timeout);
+                    timeout = 0;
+                    while (timeout == 0)
+                    {
+                        session.ProcessEvents(ref timeout);
+                        //NativeMethods.sp_session_process_events(session, ref timeout);
+                    }
+                    //agent.LoadTracks(session);
+
+                }
+            }
+
+            /*var pcmData = agent.Buffer;
+
+            using (var f = File.OpenWrite("soundout.wav"))
+            using (var writer = new BinaryWriter(f))
+            {
+                WaveWriter.WriteWave(writer, 41000, 2, 2, pcmData);
+            }
+            File.WriteAllBytes("rawpcm", agent.Buffer);
+            error = NativeMethods.sp_session_player_unload(session);
+            Console.WriteLine("unload: {0}", error);
+            error = NativeMethods.sp_session_release(session);
+            Console.WriteLine("release: {0}", error);
+
+            //Console.ReadLine();
+            // Skip shutdown - libspotify.NET is a mess. 
+            //error = libspotify.sp_session_release(ref session);
+            //Console.WriteLine("Release error: {0}", error);
+            //Console.ReadLine();
+            /*Marshal.GetFunctionPointerForDelegate();
+            var callbacks = new libspotifydotnet.libspotify.sp_session_callbacks {
+                connection_error = IntPtr.Zero,
+                connectionstate_updated = IntPtr.Zero,
+                credentials_blob_updated = IntPtr.Zero,
+                end_of_track = IntPtr.Zero,
+                get_audio_buffer_stats = IntPtr.Zero,
+                log_message = ,
+                logged_in=,
+                logged_out = ,
+                message_to_user = ,
+                metadata_updated = ,
+                music_delivery = ,
+                notify_main_thread = ,
+                offline_error=,
+                offline_status_updated = ,
+                play_token_lost = ,
+                private_session_mode_changed = ,
+                scrobble_error = ,
+                start_playback = ,
+                stop_playback = ,
+                streaming_error = ,
+                userinfo_updated = 
+            };*/
+
+
+        }
+
+        class Callbacks2 : SpotifySessionListener
+        {
+            ManualResetEvent iEv;
+
+            public Callbacks2(ManualResetEvent aEv)
+            {
+                iEv = aEv;
+            }
+
+            public override void LoggedIn(SpotifySession session, SpotifyError error)
+            {
+                Console.WriteLine("logged_in(session, {0})", error);
+            }
+            public override void LoggedOut(SpotifySession session)
+            {
+                Console.WriteLine("logged_out(session)");
+            }
+            void DumpPlaylist(SpotifySession session, Playlist playlist)
+            {
+                int numTracks = playlist.NumTracks();
+                for (int i = 0; i != numTracks; ++i)
+                {
+                    Track track = playlist.Track(i);
+                    if (!track.IsLoaded())
+                    {
+                        Console.WriteLine("    Track #{0}: (not loaded)", i);
+                        continue;
+                    }
+                    var availability = Track.GetAvailability(session, track);
+                    Console.WriteLine("    Track #{0}: {1} [{2}]", i, FormatCSharpString(track.Name()), availability);
+                }
+            }
+            public override void MetadataUpdated(SpotifySession session)
+            {
+                Console.WriteLine("metadata_updated(session)");
+                var container = session.Playlistcontainer();
+                if (!container.IsLoaded())
+                {
+                    Console.WriteLine("Container not loaded yet.");
+                    return;
+                }
+                Console.WriteLine("PLAYLISTS:");
+                int numLists = container.NumPlaylists();
+                for (int i = 0; i != numLists; ++i)
+                {
+                    var playlistType = container.PlaylistType(i);
+                    switch (playlistType)
+                    {
+                        case PlaylistType.Playlist:
+                            var playlist = container.Playlist(i);
+                            if (!playlist.IsLoaded())
+                            {
+                                Console.WriteLine("Playlist (not loaded)");
+                                break;
+                            }
+                            Console.WriteLine("Playlist {0}", FormatCSharpString(playlist.Name()));
+                            DumpPlaylist(session, playlist);
+                            break;
+                        case PlaylistType.StartFolder:
+                        case PlaylistType.EndFolder:
+                            string startEnd = playlistType == PlaylistType.StartFolder ? "start" : "end";
+                            var folderName = container.PlaylistFolderName(i);
+                            Console.WriteLine("Folder {0} {1}", startEnd, FormatCSharpString(folderName));
+                            break;
+                        case PlaylistType.Placeholder:
+                            Console.WriteLine("Placeholder");
+                            break;
+                        default:
+                            Console.WriteLine("Bad value");
+                            break;
+                    }
+                }
+                Console.WriteLine("END OF PLAYLISTS");
+                Console.WriteLine("");
+            }
+            /*
+            public void LoadTracks(IntPtr aSession)
+            {
+                var session = aSession;
+                lock (iTracksToLoad)
+                {
+                    while (iTracksToLoad.Count > 0)
+                    {
+                        string trackUri = iTracksToLoad.Dequeue();
+                        using (var utf8TrackUri = SpotifyMarshalling.StringToUtf8(trackUri))
+                        {
+                            IntPtr link = NativeMethods.sp_link_create_from_string(utf8TrackUri.IntPtr);
+                            IntPtr track = NativeMethods.sp_link_as_track(link);
+                            var loadError = NativeMethods.sp_session_player_load(session, track);
+                            Console.WriteLine("Tried to load, got: {0}", loadError);
+                            if (loadError == SpotifyError.Ok)
+                            {
+                                var playError = NativeMethods.sp_session_player_play(session, true);
+                                Console.WriteLine("Tried to play, got: {0}", playError);
+                            }
+                        }
+                    }
+                }
+            }*/
+            public override void ConnectionError(SpotifySession session, SpotifyError error)
+            {
+                Console.WriteLine("connection_error(session, {0})", error);
+            }
+            public override void MessageToUser(SpotifySession session, string message)
+            {
+                Console.WriteLine("message_to_user(session, {0})", FormatCSharpString(message));
+            }
+            public override void NotifyMainThread(SpotifySession session)
+            {
+                Console.WriteLine("notify_main_thread(session)");
+                iEv.Set();
+            }
+            public override int MusicDelivery(SpotifySession session, AudioFormat format, IntPtr frames, int num_frames)
+            {
+                Console.WriteLine("music(session, fmt={0}, frame_ptr={1}, count={2}, channels={3}, rate={4}, type={5})", format, frames, num_frames, format.channels, format.sample_rate, format.sample_type);
+                return 0;
+                /*if (format.sample_type != SampleType.Int16NativeEndian)
+                {
+                    return num_frames;
+                }
+                int bytes_per_frame = 2 * format.channels;
+                int bytes_delivered = bytes_per_frame * num_frames;
+                Console.WriteLine("Delivered {0} bytes", bytes_delivered);
+                if (bytes_delivered > iTempBuffer.Length)
+                {
+                    num_frames = iTempBuffer.Length / bytes_per_frame;
+                    bytes_delivered = bytes_per_frame * num_frames;
+                }
+                Marshal.Copy(frames, iTempBuffer, 0, bytes_delivered);
+                Array.Copy(iTempBuffer, 0, iOutputBuffer, iOutputIndex, bytes_delivered);
+                iOutputIndex += bytes_delivered;
+                Console.WriteLine("    Now at index {0}", iOutputIndex);
+                return num_frames;*/
+            }
+            public override void PlayTokenLost(SpotifySession session)
+            {
+                Console.WriteLine("play_token_lost(session)");
+            }
+            public override void LogMessage(SpotifySession session, string data)
+            {
+                Console.WriteLine("log_message(session, data={0})", FormatCSharpString(data));
+            }
+            public override void EndOfTrack(SpotifySession session)
+            {
+                Console.WriteLine("end_of_track");
+            }
+            public override void StreamingError(SpotifySession session, SpotifyError error)
+            {
+                Console.WriteLine("streaming_error(session, error={0})", error);
+            }
+            public override void UserinfoUpdated(SpotifySession session)
+            {
+                Console.WriteLine("userinfo_updated");
+            }
+            public override void StartPlayback(SpotifySession session)
+            {
+                Console.WriteLine("start_playback");
+            }
+            public override void StopPlayback(SpotifySession session)
+            {
+                Console.WriteLine("stop_playback");
+            }
+            public override void GetAudioBufferStats(SpotifySession session, out AudioBufferStats stats)
+            {
+                stats.stutter = 0;
+                stats.samples = 4096;
+                //Console.WriteLine("get_audio_buffer_stats");
+            }
+            public override void OfflineStatusUpdated(SpotifySession session)
+            {
+                Console.WriteLine("offline_status_updated");
+            }
+            public override void OfflineError(SpotifySession session, SpotifyError error)
+            {
+                Console.WriteLine("offline_error(session, error={0})", error);
+            }
+            public override void CredentialsBlobUpdated(SpotifySession session, string blob)
+            {
+                Console.WriteLine("credentials_blob_updated(session, blob={0})", FormatCSharpString(blob));
+            }
+            public override void ConnectionstateUpdated(SpotifySession session)
+            {
+                Console.WriteLine("connectionstate_updated");
+            }
+            public override void ScrobbleError(SpotifySession session, SpotifyError error)
+            {
+                Console.WriteLine("scrobble_error(session, error={0})", error);
+            }
+            public override void PrivateSessionModeChanged(SpotifySession session, bool is_private)
+            {
+                Console.WriteLine("private_session_mode_changed(session, is_private={0})", is_private);
+            }
+        }
+
+        static void Main2(string[] args)
         {
             ManualResetEvent ev = new ManualResetEvent(false);
             CallbackAgent agent = new CallbackAgent(ev);

@@ -29,6 +29,15 @@ namespace ManagedApiBuilder
         public string NativeName { get; set; }
         [JsonProperty("managed-name")]
         public string ManagedName { get; set; }
+        [JsonProperty("force-public")]
+        public bool ForcePublic { get; set; }
+        [JsonProperty("suppress-functions")]
+        public List<string> SuppressFunctions { get; set; }
+
+        public ApiStructConfiguration()
+        {
+            SuppressFunctions = new List<string>();
+        }
     }
 
     [JsonObject]
@@ -46,7 +55,7 @@ namespace ManagedApiBuilder
 
     class Program
     {
-        static void Main2(string[] args)
+        /*static void Main2(string[] args)
         {
             var transformers = new List<IArgumentTransformer>{
                 new StringReturnTransformer(),
@@ -73,7 +82,7 @@ namespace ManagedApiBuilder
                 assembler.NextArgument();
             }
             Console.WriteLine(assembler.GenerateWrapperMethod("    "));
-        }
+        }*/
         static void Main(string[] args)
         {
             var text = File.ReadAllText(args[0]);
@@ -142,6 +151,8 @@ namespace ManagedApiBuilder
             {
                 string name = kvpClass.Key;
                 var spotifyClass = kvpClass.Value;
+                Console.Write(gen.GenerateCSharpClass("    ", name, spotifyClass.NativeFunctions));
+                /*
                 Console.WriteLine("    public partial class {0}", name);
                 Console.WriteLine("    {");
                 Console.WriteLine("        IntPtr _handle;");
@@ -154,7 +165,7 @@ namespace ManagedApiBuilder
                 {
                     Console.WriteLine(gen.GenerateCSharpWrappingMethod("        ", kvpFunction.Key, name, kvpFunction.Value));
                 }
-                Console.WriteLine("    }");
+                Console.WriteLine("    }");*/
             }
             Console.WriteLine("}");
         }
