@@ -44,11 +44,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlbumBrowse.cs" />
+    <Compile Include="ArtistBrowse.cs" />
     <Compile Include="Class1.cs" />
-    <Compile Include="NativeMethods.cs" />
+    <Compile Include="GeneratedCode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RiffWriter.cs" />
+    <Compile Include="Search.cs" />
+    <Compile Include="SpotifyException.cs" />
+    <Compile Include="SpotifyMarshalling.cs" />
+    <Compile Include="SpotifySession.cs" />
     <Compile Include="TestProgram.cs" />
+    <Compile Include="TopListBrowse.cs" />
+    <Compile Include="Utf8String.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
