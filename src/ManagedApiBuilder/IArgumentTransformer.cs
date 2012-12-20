@@ -46,7 +46,7 @@ namespace ManagedApiBuilder
                     pinvokeArgType = managedArgType = new CSharpType(managedEnumName);
                     break;
             }
-            aAssembler.AddPInvokeParameter(pinvokeArgType, aNativeFunction.CurrentParameter.Name);
+            aAssembler.AddPInvokeParameter(pinvokeArgType, aNativeFunction.CurrentParameter.Name, aNativeFunction.CurrentParameter.Name);
             //Console.WriteLine("foo {0} {1} {2}", aAssembler == null, aNativeFunction == null, aNativeFunction.CurrentParameter == null);
             aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, managedArgType);
             aNativeFunction.ConsumeArgument();
@@ -75,9 +75,80 @@ namespace ManagedApiBuilder
                 return false;
             }
 
-            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name + "._handle");
+            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, aNativeFunction.CurrentParameter.Name + "._handle");
             aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, new CSharpType(className));
             aNativeFunction.ConsumeArgument();
+            return true;
+        }
+    }
+
+    class FunctionPointerArgumentTransformer : IArgumentTransformer
+    {
+        Dictionary<string, string> iFunctionTypedefsToDelegates;
+
+        public FunctionPointerArgumentTransformer(IEnumerable<KeyValuePair<string, string>> aFunctionTypedefsToDelegates)
+        {
+            iFunctionTypedefsToDelegates = aFunctionTypedefsToDelegates.ToDictionary(x=>x.Key, x=>x.Value);
+        }
+
+        public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
+        {
+            var pointerType = aNativeFunction.CurrentParameterType as PointerCType;
+            if (pointerType == null) return false;
+            var namedType = pointerType.BaseType as NamedCType;
+            if (namedType == null) return false;
+            string className;
+            if (!iFunctionTypedefsToDelegates.TryGetValue(namedType.Name, out className))
+            {
+                return false;
+            }
+
+            aAssembler.AddPInvokeParameter(new CSharpType(className), aNativeFunction.CurrentParameter.Name, null);
+            aAssembler.SuppressManagedWrapper();
+            aNativeFunction.ConsumeArgument();
+            return true;
+        }
+    }
+
+    class RefStructArgumentTransformer : IArgumentTransformer
+    {
+        readonly Dictionary<string, string> iHandlesToStructNames;
+
+        public RefStructArgumentTransformer(IEnumerable<KeyValuePair<string, string>> aHandlesToStructNames)
+        {
+            iHandlesToStructNames = aHandlesToStructNames.ToDictionary(x=>x.Key, x=>x.Value);
+        }
+
+        public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
+        {
+            var pointerType = aNativeFunction.CurrentParameterType as PointerCType;
+            if (pointerType == null) return false;
+            var namedType = pointerType.BaseType as NamedCType;
+            if (namedType == null) return false;
+            string structName;
+            if (!iHandlesToStructNames.TryGetValue(namedType.Name, out structName))
+            {
+                return false;
+            }
+
+            aAssembler.AddPInvokeParameter(new CSharpType(structName) { IsRef = true }, aNativeFunction.CurrentParameter.Name, null);
+            aAssembler.SuppressManagedWrapper();
+            //aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, new CSharpType(className));
+            aNativeFunction.ConsumeArgument();
+            return true;
+        }
+    }
+
+    class PointerReturnTransformer : IArgumentTransformer
+    {
+        public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
+        {
+            if (aNativeFunction.CurrentParameter != null) return false;
+            if (!(aNativeFunction.ReturnType is PointerCType)) return false;
+
+            aAssembler.SetPInvokeReturn(new CSharpType("IntPtr"), null);
+            aAssembler.SuppressManagedWrapper();
+            aNativeFunction.ConsumeReturn();
             return true;
         }
     }
@@ -92,7 +163,7 @@ namespace ManagedApiBuilder
             {
                 return false;
             }
-            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), "this._handle");
+            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, "this._handle");
             aAssembler.IsStatic = false;
             aNativeFunction.ConsumeArgument();
             return true;
@@ -146,8 +217,8 @@ namespace ManagedApiBuilder
             string lengthManagedType = lengthNativeType == "size_t" ? "UIntPtr" : "int";
             string parameterName = aNativeFunction.CurrentParameter.Name;
             string utf8StringName = "utf8_"+parameterName;
-            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), utf8StringName + ".IntPtr");
-            aAssembler.AddPInvokeParameter(new CSharpType(lengthManagedType), "(" + lengthManagedType + ")(" + utf8StringName + ".BufferLength)");
+            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, utf8StringName + ".IntPtr");
+            aAssembler.AddPInvokeParameter(new CSharpType(lengthManagedType), aNativeFunction.NextParameter.Name, "(" + lengthManagedType + ")(" + utf8StringName + ".BufferLength)");
             aAssembler.SetPInvokeReturn(new CSharpType("int"), "stringLength_"+parameterName);
             aAssembler.SetManagedReturn(new CSharpType("string"));
             aAssembler.InsertAtTop(      "string returnValue;");
@@ -196,8 +267,8 @@ namespace ManagedApiBuilder
 
             string parameterName = aNativeFunction.CurrentParameter.Name;
             string utf8StringName = "utf8_"+parameterName;
-            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), utf8StringName + ".IntPtr");
-            aAssembler.AddPInvokeParameter(new CSharpType("int"), utf8StringName + ".BufferLength");
+            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, utf8StringName + ".IntPtr");
+            aAssembler.AddPInvokeParameter(new CSharpType("int"), aNativeFunction.NextParameter.Name, utf8StringName + ".BufferLength");
             //aAssembler.SetPInvokeReturn(new CSharpType("int"), "stringLength_"+parameterName);
             aAssembler.SetManagedReturn(new CSharpType("string"));
             aAssembler.InsertAtTop(      "string returnValue;");
@@ -235,13 +306,41 @@ namespace ManagedApiBuilder
                 return false;
             }
             string utf8StringName = "utf8_" + aNativeFunction.CurrentParameter.Name;
-            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), utf8StringName + ".IntPtr");
+            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, utf8StringName + ".IntPtr");
             aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, new CSharpType("string"));
             aAssembler.InsertBeforeCall("using (Utf8String " + utf8StringName + " = SpotifyMarshalling.StringToUtf8(" + aNativeFunction.CurrentParameter.Name + "))");
             aAssembler.InsertBeforeCall("{");
             aAssembler.IncreaseIndent();
             aAssembler.DecreaseIndent();
             aAssembler.InsertAfterCall("}");
+            aNativeFunction.ConsumeArgument();
+            return true;
+        }
+    }
+
+    class RefHandleArgumentTransformer : IArgumentTransformer
+    {
+        readonly HashSet<string> iHandleNames;
+
+        public RefHandleArgumentTransformer(IEnumerable<string> aHandleNames)
+        {
+            iHandleNames = new HashSet<string>(aHandleNames);
+        }
+        public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
+        {
+            PointerCType pointer1Type = aNativeFunction.CurrentParameterType as PointerCType;
+            if (pointer1Type == null) return false;
+            PointerCType pointer2Type = pointer1Type.BaseType as PointerCType;
+            if (pointer2Type == null) return false;
+            NamedCType nativeType = pointer2Type.BaseType as NamedCType;
+            if (nativeType == null) return false;
+            if (!iHandleNames.Contains(nativeType.Name)) return false;
+
+            aAssembler.AddPInvokeParameter(
+                new CSharpType("IntPtr") { IsRef = true },
+                aNativeFunction.CurrentParameter.Name,
+                null);
+            aAssembler.SuppressManagedWrapper();
             aNativeFunction.ConsumeArgument();
             return true;
         }
@@ -265,10 +364,18 @@ namespace ManagedApiBuilder
                     return false;
             }
         }*/
-        Dictionary<string, string> iEnumNativeToManagedMappings;
-        public RefArgumentTransformer(IEnumerable<KeyValuePair<string, string>> aEnumNativeToManagedMappings)
+        readonly Dictionary<string, string> iEnumNativeToManagedMappings;
+        //readonly Dictionary<string, string> iStructNativeToManagedMappings;
+        //readonly Dictionary<string, string> iHandleNativeToManagedMappings;
+        public RefArgumentTransformer(
+            IEnumerable<KeyValuePair<string, string>> aEnumNativeToManagedMappings
+            //IEnumerable<KeyValuePair<string, string>> aStructNativeToManagedMappings,
+            //IEnumerable<KeyValuePair<string, string>> aHandleNativeToManagedMappings
+            )
         {
             iEnumNativeToManagedMappings = aEnumNativeToManagedMappings.ToDictionary(x => x.Key, x => x.Value);
+            //iStructNativeToManagedMappings = aStructNativeToManagedMappings.ToDictionary(x => x.Key, x => x.Value);
+            //iHandleNativeToManagedMappings = aHandleNativeToManagedMappings.ToDictionary(x => x.Key, x => x.Value);
         }
 
         public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
@@ -278,30 +385,42 @@ namespace ManagedApiBuilder
             if (pointerType == null) return false;
             NamedCType nativeType = pointerType.BaseType as NamedCType;
             if (nativeType == null) return false;
-            CSharpType csharpType;
+
+
+            CSharpType pinvokeArgType;
+            CSharpType managedArgType;
             switch (nativeType.Name)
             {
                 case "bool":
-                    csharpType =
-                        new CSharpType("bool") { IsRef = true };
+                    pinvokeArgType = new CSharpType("bool") { IsRef = true, Attributes = { "MarshalAs(UnmanagedType.I1)" } };
+                    managedArgType = new CSharpType("bool") { IsRef = true };
                     break;
                 case "int":
-                    csharpType =
-                        new CSharpType("int") { IsRef = true };
+                    pinvokeArgType = managedArgType = new CSharpType("int") { IsRef = true };
+                    break;
+                case "size_t":
+                    pinvokeArgType = managedArgType = new CSharpType("UIntPtr") { IsRef = true };
+                    break;
+                case "sp_uint64":
+                    pinvokeArgType = managedArgType = new CSharpType("ulong") { IsRef = true };
                     break;
                 default:
-                    string managedEnum;
-                    if (!iEnumNativeToManagedMappings.TryGetValue(nativeType.Name, out managedEnum))
+                    string managedEnumName;
+                    if (!iEnumNativeToManagedMappings.TryGetValue(nativeType.Name, out managedEnumName))
                     {
                         return false;
                     }
-                    csharpType =
-                        new CSharpType(managedEnum) { IsRef = true };
+                    pinvokeArgType = managedArgType = new CSharpType(managedEnumName) { IsRef = true };
                     break;
             }
-            aAssembler.AddPInvokeParameter(csharpType, "ref @" + aNativeFunction.CurrentParameter.Name);
-            aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, csharpType);
+
+            aAssembler.AddPInvokeParameter(pinvokeArgType, aNativeFunction.CurrentParameter.Name, "ref @" + aNativeFunction.CurrentParameter.Name);
+            aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, managedArgType);
             aNativeFunction.ConsumeArgument();
+            //if (suppressManaged)
+            //{
+            //    aAssembler.SuppressManagedWrapper();
+            //}
             return true;
         }
     }
@@ -333,29 +452,32 @@ namespace ManagedApiBuilder
             if (aNativeFunction.CurrentParameter != null) { return false; }
             var namedType = aNativeFunction.ReturnType as NamedCType;
             if (namedType == null) { return false; }
-            string typeName;
+            CSharpType pinvokeArgType;
+            CSharpType managedArgType;
             switch (namedType.Name)
             {
-                case "int":
-                    typeName = "int";
-                    break;
                 case "bool":
-                    typeName = "bool";
+                    pinvokeArgType = new CSharpType("bool"){ Attributes = { "MarshalAs(UnmanagedType.I1)" } };
+                    managedArgType = new CSharpType("bool");
+                    break;
+                case "int":
+                    pinvokeArgType = managedArgType = new CSharpType("int");
                     break;
                 case "sp_uint64":
-                    typeName = "ulong";
+                    pinvokeArgType = managedArgType = new CSharpType("ulong");
                     break;
                 default:
-                    if (iEnumNativeToManagedMappings.ContainsKey(namedType.Name))
+                    string managedEnumName;
+                    if (!iEnumNativeToManagedMappings.TryGetValue(namedType.Name, out managedEnumName))
                     {
-                        typeName = iEnumNativeToManagedMappings[namedType.Name];
-                        break;
+                        return false;
                     }
-                    return false;
+                    pinvokeArgType = managedArgType = new CSharpType(managedEnumName);
+                    break;
             }
-            aFunctionAssembler.InsertAtTop(typeName + " returnValue;");
-            aFunctionAssembler.SetPInvokeReturn(new CSharpType(typeName), "returnValue");
-            aFunctionAssembler.SetManagedReturn(new CSharpType(typeName));
+            aFunctionAssembler.InsertAtTop(managedArgType.Name + " returnValue;");
+            aFunctionAssembler.SetPInvokeReturn(pinvokeArgType, "returnValue");
+            aFunctionAssembler.SetManagedReturn(managedArgType);
             aFunctionAssembler.InsertAtEnd("return returnValue;");
             aNativeFunction.ConsumeReturn();
             return true;
@@ -424,6 +546,68 @@ namespace ManagedApiBuilder
             aFunctionAssembler.SetManagedReturn(new CSharpType("string"));
             aFunctionAssembler.InsertAtEnd("return SpotifyMarshalling.Utf8ToString(returnValue);");
             aNativeFunction.ConsumeReturn();
+            return true;
+        }
+    }
+
+    class VoidStarArgumentTransformer : IArgumentTransformer
+    {
+        public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
+        {
+            var pointerType = aNativeFunction.CurrentParameterType as PointerCType;
+            if (pointerType == null) return false;
+            var namedType = pointerType.BaseType as NamedCType;
+            if (namedType == null) return false;
+
+            switch (namedType.Name)
+            {
+                case "void":
+                    break;
+                default:
+                    return false;
+            }
+
+            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, null);
+            aAssembler.SuppressManagedWrapper();
+            aNativeFunction.ConsumeArgument();
+            return true;
+        }
+    }
+
+    class ByteArrayArgumentTransformer : IArgumentTransformer
+    {
+        public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
+        {
+            var arrayType = aNativeFunction.CurrentParameterType as ArrayCType;
+            if (arrayType == null) return false;
+            var namedType = arrayType.BaseType as NamedCType;
+            if (namedType == null) return false;
+
+            switch (namedType.Name)
+            {
+                case "byte":
+                    break;
+                default:
+                    return false;
+            }
+
+            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, null);
+            aAssembler.SuppressManagedWrapper();
+            aNativeFunction.ConsumeArgument();
+            return true;
+        }
+    }
+
+    class VoidArgumentListTransformer : IArgumentTransformer
+    {
+        public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
+        {
+            if (aNativeFunction.CurrentParameterIndex != 0) return false;
+            if (!aNativeFunction.CurrentParameterType.MatchToPattern(new NamedCType("void")).IsMatch)
+            {
+                return false;
+            }
+            aNativeFunction.ConsumeArgument();
             return true;
         }
     }

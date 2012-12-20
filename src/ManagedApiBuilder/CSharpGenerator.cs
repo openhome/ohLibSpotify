@@ -199,7 +199,7 @@ namespace ManagedApiBuilder
                     if (typeName == "bool") return new CSharpType("bool") { IsRef = true, Attributes = { "MarshalAs(UnmanagedType.I1)" } };
                     if (typeName == "char") return new CSharpType("IntPtr");
                     if (typeName == "byte") return new CSharpType("IntPtr");
-                    if (typeName == "size_t") return new CSharpType("UIntPtr");
+                    if (typeName == "size_t") return new CSharpType("UIntPtr") { IsRef = true };
                     return new CSharpType("/* ??? */ IntPtr"); // TODO: Out of band warning
                 }
                 return new CSharpType("IntPtr");
@@ -234,8 +234,23 @@ namespace ManagedApiBuilder
 
         public string GenerateDllImportFunction(string aIndent, string aFunctionName, FunctionCType aFunctionType)
         {
-            return GenerateFunctionDeclaration(
+            string oldResult = GenerateFunctionDeclaration(
                 aIndent, DllImportTemplate, aFunctionName, aFunctionType);
+            var assembler = AssembleFunction(aFunctionName, aFunctionType, null, null);
+            if (assembler == null)
+            {
+                Console.WriteLine("/////////////// FAILURE //////////////////");
+                Console.Write(oldResult);
+            }
+            string newResult = assembler.GeneratePInvokeDeclaration(aIndent);
+            if (newResult != oldResult)
+            {
+                Console.WriteLine("/////////////// MISMATCH /////////////////");
+                Console.Write(oldResult);
+                Console.Write(newResult);
+                throw new Exception("Mismatch!");
+            }
+            return newResult;
         }
         public string GenerateRawDelegate(string aIndent, string aFunctionName, FunctionCType aFunctionType)
         {
@@ -333,6 +348,56 @@ namespace ManagedApiBuilder
             return methodBuilder.ToString();
         }
 
+        FunctionAssembler AssembleFunction(string aFunctionName, FunctionCType aFunctionType, string aHandleName, string aMethodName)
+        {
+            var enumNames = iEnumNames.ToDictionary(x => x, ManagedNameForNativeType); // iEnumConfigurations.Values.ToDictionary(x => x.NativeName, x => x.ManagedName);
+            var structNames = iStructNames.ToDictionary(x => x, ManagedNameForNativeType);
+            var classNames = iHandleNames.ToDictionary(x => x, ManagedNameForNativeType);
+            var delegateNames = iDelegateNames.ToDictionary(x => x, ManagedNameForNativeType);
+
+            var transformers = new List<IArgumentTransformer>{
+                aHandleName == null ? null : new ThisPointerArgumentTransformer{HandleType = aHandleName},
+                new VoidArgumentListTransformer(),
+                new FunctionPointerArgumentTransformer(delegateNames),
+                new VoidStarArgumentTransformer(),
+                new HandleArgumentTransformer(classNames),
+                new RefStructArgumentTransformer(structNames),
+                new SpotifyErrorReturnTransformer(),
+                new StringReturnTransformer(),
+                new UnknownLengthStringReturnTransformer(),
+                new StringArgumentTransformer(),
+                new ByteArrayArgumentTransformer(),
+                new TrivialArgumentTransformer(enumNames),
+                new RefHandleArgumentTransformer(iStructNames.Concat(iHandleNames)),
+                new RefArgumentTransformer(enumNames),
+                new TrivialReturnTransformer(enumNames),
+                new HandleReturnTransformer(classNames),
+                new SimpleStringReturnTransformer(),
+                new PointerReturnTransformer(),
+                new VoidReturnTransformer()}.Where(x=>x!=null).ToList();
+            //Declaration arg1 = new Declaration { Name = "inputString", Kind = "instance", CType = new PointerCType(new NamedCType("char")) };
+            //Declaration arg2 = new Declaration { Name = "flag1", Kind = "instance", CType = new NamedCType("bool") };
+            //Declaration arg3 = new Declaration { Name = "ptrToInt", Kind = "instance", CType = new PointerCType(new NamedCType("int")) };
+            //Console.WriteLine(stringTransformer.CanApply(arg1, null, null));
+            //Declaration arg4 = new Declaration { Name = "outputString", Kind = "instance", CType = new PointerCType(new NamedCType("char")) };
+            //Declaration arg5 = new Declaration { Name = "bufferLength", Kind = "instance", CType = new NamedCType("size_t") };
+            //CType retType = new NamedCType("int");
+            //List<Declaration> arguments = new List<Declaration> { arg1, arg2, arg3, arg4, arg5 };
+            var assembler = new FunctionAssembler(aFunctionName, aMethodName);
+            var nativeFunction = new FunctionSpecificationAnalyser(aFunctionType.Arguments, aFunctionType.ReturnType);
+            while (nativeFunction.CurrentParameter != null || nativeFunction.ReturnType != null)
+            {
+                var transformer = transformers.FirstOrDefault(x=>x.Apply(nativeFunction, assembler));
+                if (transformer == null)
+                {
+                    Console.WriteLine("/* FAILED AT ARG {0} */", nativeFunction.CurrentParameter != null ? nativeFunction.CurrentParameter.Name : "none");
+                    return null; //aIndent + String.Format("// Skipped function '{0}'.\n", aFunctionName);
+                }
+                assembler.NextArgument();
+            }
+            return assembler;
+        }
+
         public string GenerateCSharpWrappingMethod(string aIndent, string aFunctionName, string aHandleName, FunctionCType aFunctionType)
         {
             if (!aFunctionName.StartsWith(aHandleName+"_"))
@@ -340,9 +405,10 @@ namespace ManagedApiBuilder
                 return aIndent + "// Bad method " + aFunctionName + "\n";
             }
             var methodName = PascalCase(SplitName(aFunctionName.Substring(aHandleName.Length+1)));
-            
+            var assembler = AssembleFunction(aFunctionName, aFunctionType, aHandleName, methodName);
 
-            //var enumNames = new Dictionary<string, string> { { "sp_error", "SpotifyError" } }; // FIXME
+            /*
+             * //var enumNames = new Dictionary<string, string> { { "sp_error", "SpotifyError" } }; // FIXME
             var enumNames = iEnumNames.ToDictionary(x => x, ManagedNameForNativeType); // iEnumConfigurations.Values.ToDictionary(x => x.NativeName, x => x.ManagedName);
             var classNames = iHandleNames.ToDictionary(x => x, ManagedNameForNativeType);
 
@@ -377,8 +443,13 @@ namespace ManagedApiBuilder
                     return aIndent + String.Format("// Skipped function '{0}'.\n", aFunctionName);
                 }
                 assembler.NextArgument();
+            }*/
+
+            if (assembler == null)
+            {
+                return aIndent + String.Format("// Skipped function '{0}'.\n", aFunctionName);
             }
-            
+
             return assembler.GenerateWrapperMethod(aIndent);
 
             //return "";
