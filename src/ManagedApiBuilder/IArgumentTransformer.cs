@@ -342,6 +342,9 @@ namespace ManagedApiBuilder
                 case "bool":
                     typeName = "bool";
                     break;
+                case "sp_uint64":
+                    typeName = "ulong";
+                    break;
                 default:
                     if (iEnumNativeToManagedMappings.ContainsKey(namedType.Name))
                     {

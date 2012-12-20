@@ -181,9 +181,13 @@ namespace SpotifySharp
         }
 
 
+        static Dictionary<IntPtr, object> iSpotifyObjects = new Dictionary<IntPtr, object>();
+        static Dictionary<IntPtr, object> iSpotifyCallbacks = new Dictionary<IntPtr, object>();
         static Dictionary<IntPtr, SpotifySession> iSpotifySessions = new Dictionary<IntPtr, SpotifySession>();
         static Dictionary<Tuple<IntPtr, IntPtr>, object> iCallbackObjects = new Dictionary<Tuple<IntPtr, IntPtr>, object>();
         static object iGlobalLock = new object();
+
+        //public static object GetSpotifyObject(IntPtr)
 
         public static SpotifySession GetManagedSession(IntPtr aSessionPtr)
         {
@@ -207,6 +211,7 @@ namespace SpotifySharp
                 iSpotifySessions.Remove(aSessionPtr);
             }
         }
+
 
         public static object GetCallbackObject(IntPtr aSpotifyObject, IntPtr aUserData)
         {
@@ -248,6 +253,79 @@ namespace SpotifySharp
             }
         }
     }
+    
+    internal class ManagedListenerTable<T>
+    {
+        object _monitor = new object();
+        int _counter = 100;
+        readonly Dictionary<IntPtr, T> _table = new Dictionary<IntPtr, T>();
+
+        public IntPtr PutUniqueObject(T obj)
+        {
+            lock (_monitor)
+            {
+                _counter += 1;
+                _table[(IntPtr)_counter] = obj;
+                return (IntPtr)_counter;
+            }
+        }
+
+        public T GetObject(IntPtr ptr)
+        {
+            lock (_monitor)
+            {
+                T retval;
+                if (_table.TryGetValue(ptr, out retval))
+                {
+                    return retval;
+                }
+                return default(T);
+            }
+        }
+
+        public void ReleaseObject(IntPtr ptr)
+        {
+            lock (_monitor)
+            {
+                _table.Remove(ptr);
+            }
+        }
+    }
+
+    internal class ManagedWrapperTable<T>
+    {
+        readonly Func<IntPtr, T> _constructor;
+        object _monitor = new object();
+        readonly Dictionary<IntPtr, T> _table = new Dictionary<IntPtr, T>();
+
+        public ManagedWrapperTable(Func<IntPtr,T> constructor)
+        {
+            _constructor = constructor;
+        }
+
+        public T GetUniqueObject(IntPtr ptr)
+        {
+            lock (_monitor)
+            {
+                T retval;
+                if (_table.TryGetValue(ptr, out retval))
+                {
+                    return retval;
+                }
+                retval = _constructor(ptr);
+                _table[ptr] = retval;
+                return retval;
+            }
+        }
+
+        public void ReleaseObject(IntPtr ptr)
+        {
+            lock (_monitor)
+            {
+                _table.Remove(ptr);
+            }
+        }
+    }
 
     [Serializable]
     public class SpotifyException : Exception
@@ -266,6 +344,7 @@ namespace SpotifySharp
           System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
     }
+
 
 
     static class SessionDelegates
@@ -303,14 +382,13 @@ namespace SpotifySharp
         {
             public SpotifySession Session;
             public SpotifySessionListener Listener;
-            public bool IsReady;
         }
         static SessionAndListener GetListener(IntPtr nativeSession)
         {
             SessionAndListener retVal = new SessionAndListener();
-            retVal.Session = SpotifyMarshalling.GetManagedSession(nativeSession);
-            retVal.Listener = retVal.Session != null ? retVal.Session.Listener : null;
-            retVal.IsReady = retVal.Listener != null;
+            retVal.Session = SpotifySession.SessionTable.GetUniqueObject(nativeSession); //  SpotifyMarshalling.GetManagedSession(nativeSession);
+            IntPtr userdata = NativeMethods.sp_session_userdata(nativeSession);
+            retVal.Listener = SpotifySession.ListenerTable.GetObject(userdata);
             return retVal;
         }
         
@@ -341,14 +419,6 @@ namespace SpotifySharp
         }
         static void NotifyMainThread(IntPtr @session)
         {
-            // notify_main_thread can (and *does*) occur on another thread before
-            // we've even returned from sp_session_create and taken note of our session
-            // pointer to associate it with our managed listener. If that happens, the
-            // notification goes to the NullSessionListener instance that the SpotifSession
-            // was constructed with and is discarded. A better solution might be to record
-            // the notification and deliver it when the true Listener is finally associated
-            // with the SpotifySession.
-            // Even better would be to use sp_session_userdata...
             var context = GetListener(session);
             context.Listener.NotifyMainThread(context.Session);
         }
@@ -644,17 +714,22 @@ namespace SpotifySharp
     }*/
     public sealed partial class SpotifySession : IDisposable
     {
+        internal static readonly ManagedWrapperTable<SpotifySession> SessionTable = new ManagedWrapperTable<SpotifySession>(x=>new SpotifySession(x));
+        internal static readonly ManagedListenerTable<SpotifySessionListener> ListenerTable = new ManagedListenerTable<SpotifySessionListener>();
+
         SpotifySessionListener iListener = new NullSessionListener();
         internal SpotifySessionListener Listener
         {
             get { return iListener; }
             set { iListener = value; }
         }
+        internal IntPtr ListenerToken { get; set; }
 
 
         public static SpotifySession Create(SpotifySessionConfig config)
         {
             IntPtr sessionPtr = IntPtr.Zero;
+            IntPtr listenerToken;
             using (var cacheLocation = SpotifyMarshalling.StringToUtf8(config.CacheLocation))
             using (var settingsLocation = SpotifyMarshalling.StringToUtf8(config.SettingsLocation))
             using (var userAgent = SpotifyMarshalling.StringToUtf8(config.UserAgent))
@@ -667,6 +742,7 @@ namespace SpotifySharp
             {
                 IntPtr appKeyPtr = IntPtr.Zero;
                 IntPtr callbacksPtr = IntPtr.Zero;
+                listenerToken = ListenerTable.PutUniqueObject(config.Listener);
                 try
                 {
                     byte[] appkey = config.ApplicationKey;
@@ -697,6 +773,11 @@ namespace SpotifySharp
                     SpotifyMarshalling.CheckError(error);
                     SpotifyMarshalling.RegisterCallbackObject(sessionPtr, IntPtr.Zero, config.Listener);
                 }
+                catch
+                {
+                    ListenerTable.ReleaseObject(listenerToken);
+                    throw;
+                }
                 finally
                 {
                     if (appKeyPtr != IntPtr.Zero)
@@ -709,8 +790,10 @@ namespace SpotifySharp
                     }
                 }
             }
-            SpotifySession session = SpotifyMarshalling.GetManagedSession(sessionPtr);
+            
+            SpotifySession session = SessionTable.GetUniqueObject(sessionPtr); // SpotifyMarshalling.GetManagedSession(sessionPtr);
             session.Listener = config.Listener;
+            session.ListenerToken = listenerToken;
             return session;
         }
 
@@ -718,7 +801,201 @@ namespace SpotifySharp
         {
             if (_handle == IntPtr.Zero) return;
             var error = NativeMethods.sp_session_release(_handle);
-            SpotifyMarshalling.ReleaseManagedSession(_handle);
+            SessionTable.ReleaseObject(_handle);
+            ListenerTable.ReleaseObject(ListenerToken);
+            //SpotifyMarshalling.ReleaseManagedSession(_handle);
+            _handle = IntPtr.Zero;
+            SpotifyMarshalling.CheckError(error);
+        }
+    }
+
+    public partial class Track
+    {
+        public static void SetStarred(SpotifySession session, IEnumerable<Track> tracks, bool star)
+        {
+            throw new NotImplementedException();
+            // TODO: Need to fix NativeMethods.sp_track_set_starred to marshal using an array.
+            //NativeMethods.sp_track_set_starred(
+        }
+    }
+
+    public delegate void AlbumBrowseComplete(AlbumBrowse @result);
+    public delegate void ArtistBrowseComplete(ArtistBrowse @result);
+    public delegate void ImageLoaded(Image @image);
+    public delegate void SearchComplete(Search @result);
+    public delegate void TopListBrowseComplete(TopListBrowse @result);
+    public delegate void InboxPostComplete(Inbox @result);
+
+    public sealed partial class ArtistBrowse : IDisposable
+    {
+        internal static readonly ManagedWrapperTable<ArtistBrowse> BrowseTable = new ManagedWrapperTable<ArtistBrowse>(x=>new ArtistBrowse(x));
+        internal static readonly ManagedListenerTable<ArtistBrowseComplete> ListenerTable = new ManagedListenerTable<ArtistBrowseComplete>();
+
+        IntPtr ListenerToken { get; set; }
+
+        static void ArtistBrowseComplete(IntPtr result, IntPtr userdata)
+        {
+            var browse = BrowseTable.GetUniqueObject(result);
+            var callback = ListenerTable.GetObject(userdata);
+            callback(browse);
+        }
+
+        static readonly artistbrowse_complete_cb ArtistBrowseCompleteDelegate = ArtistBrowseComplete;
+
+        public static ArtistBrowse Create(SpotifySession session, Artist artist, ArtistBrowseType type, ArtistBrowseComplete callback)
+        {
+            IntPtr listenerToken = ListenerTable.PutUniqueObject(callback);
+            IntPtr ptr = NativeMethods.sp_artistbrowse_create(session._handle, artist._handle, type, ArtistBrowseCompleteDelegate, listenerToken);
+            ArtistBrowse browse = BrowseTable.GetUniqueObject(ptr);
+            browse.ListenerToken = listenerToken;
+            return browse;
+        }
+
+        public void Dispose()
+        {
+            if (_handle == IntPtr.Zero) return;
+            var error = NativeMethods.sp_artistbrowse_release(_handle);
+            BrowseTable.ReleaseObject(_handle);
+            ListenerTable.ReleaseObject(ListenerToken);
+            _handle = IntPtr.Zero;
+            SpotifyMarshalling.CheckError(error);
+        }
+    }
+
+    public sealed partial class AlbumBrowse : IDisposable
+    {
+        internal static readonly ManagedWrapperTable<AlbumBrowse> BrowseTable = new ManagedWrapperTable<AlbumBrowse>(x=>new AlbumBrowse(x));
+        internal static readonly ManagedListenerTable<AlbumBrowseComplete> ListenerTable = new ManagedListenerTable<AlbumBrowseComplete>();
+
+        IntPtr ListenerToken { get; set; }
+
+        static void AlbumBrowseComplete(IntPtr result, IntPtr userdata)
+        {
+            var browse = BrowseTable.GetUniqueObject(result);
+            var callback = ListenerTable.GetObject(userdata);
+            callback(browse);
+        }
+
+        static readonly albumbrowse_complete_cb AlbumBrowseCompleteDelegate = AlbumBrowseComplete;
+
+        public static AlbumBrowse Create(SpotifySession session, Album album, AlbumBrowseComplete callback)
+        {
+            IntPtr listenerToken = ListenerTable.PutUniqueObject(callback);
+            IntPtr ptr = NativeMethods.sp_albumbrowse_create(session._handle, album._handle, AlbumBrowseCompleteDelegate, listenerToken);
+            AlbumBrowse browse = BrowseTable.GetUniqueObject(ptr);
+            browse.ListenerToken = listenerToken;
+            return browse;
+        }
+
+        public void Dispose()
+        {
+            if (_handle == IntPtr.Zero) return;
+            var error = NativeMethods.sp_albumbrowse_release(_handle);
+            BrowseTable.ReleaseObject(_handle);
+            ListenerTable.ReleaseObject(ListenerToken);
+            _handle = IntPtr.Zero;
+            SpotifyMarshalling.CheckError(error);
+        }
+    }
+
+    public sealed partial class TopListBrowse : IDisposable
+    {
+        internal static readonly ManagedWrapperTable<TopListBrowse> BrowseTable = new ManagedWrapperTable<TopListBrowse>(x=>new TopListBrowse(x));
+        internal static readonly ManagedListenerTable<TopListBrowseComplete> ListenerTable = new ManagedListenerTable<TopListBrowseComplete>();
+
+        IntPtr ListenerToken { get; set; }
+
+        static void TopListBrowseComplete(IntPtr result, IntPtr userdata)
+        {
+            var browse = BrowseTable.GetUniqueObject(result);
+            var callback = ListenerTable.GetObject(userdata);
+            callback(browse);
+        }
+
+        static readonly toplistbrowse_complete_cb TopListBrowseCompleteDelegate = TopListBrowseComplete;
+
+        public static TopListBrowse Create(SpotifySession session, TopListType type, TopListRegion region, string username, TopListBrowseComplete callback)
+        {
+            using (var utf8_username = SpotifyMarshalling.StringToUtf8(username))
+            {
+                IntPtr listenerToken = ListenerTable.PutUniqueObject(callback);
+                IntPtr ptr = NativeMethods.sp_toplistbrowse_create(session._handle, type, region, utf8_username.IntPtr, TopListBrowseCompleteDelegate, listenerToken);
+                TopListBrowse browse = BrowseTable.GetUniqueObject(ptr);
+                browse.ListenerToken = listenerToken;
+                return browse;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_handle == IntPtr.Zero) return;
+            var error = NativeMethods.sp_toplistbrowse_release(_handle);
+            BrowseTable.ReleaseObject(_handle);
+            ListenerTable.ReleaseObject(ListenerToken);
+            _handle = IntPtr.Zero;
+            SpotifyMarshalling.CheckError(error);
+        }
+    }
+
+    public sealed partial class Search : IDisposable
+    {
+        internal static readonly ManagedWrapperTable<Search> SearchTable = new ManagedWrapperTable<Search>(x=>new Search(x));
+        internal static readonly ManagedListenerTable<SearchComplete> ListenerTable = new ManagedListenerTable<SearchComplete>();
+
+        IntPtr ListenerToken { get; set; }
+
+        static void SearchComplete(IntPtr result, IntPtr userdata)
+        {
+            var browse = SearchTable.GetUniqueObject(result);
+            var callback = ListenerTable.GetObject(userdata);
+            callback(browse);
+        }
+
+        static readonly search_complete_cb SearchCompleteDelegate = SearchComplete;
+
+        public static Search Create(
+            SpotifySession session,
+            string query,
+            int trackOffset,
+            int trackCount,
+            int albumOffset,
+            int albumCount,
+            int artistOffset,
+            int artistCount,
+            int playlistOffset,
+            int playlistCount,
+            SearchType searchType,
+            SearchComplete callback)
+        {
+            using (var utf8_query = SpotifyMarshalling.StringToUtf8(query))
+            {
+                IntPtr listenerToken = ListenerTable.PutUniqueObject(callback);
+                IntPtr ptr = NativeMethods.sp_search_create(
+                    session._handle,
+                    utf8_query.IntPtr,
+                    trackOffset,
+                    trackCount,
+                    albumOffset,
+                    albumCount,
+                    artistOffset,
+                    artistCount,
+                    playlistOffset,
+                    playlistCount,
+                    searchType,
+                    SearchCompleteDelegate,
+                    listenerToken);
+                Search search = SearchTable.GetUniqueObject(ptr);
+                search.ListenerToken = listenerToken;
+                return search;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_handle == IntPtr.Zero) return;
+            var error = NativeMethods.sp_search_release(_handle);
+            SearchTable.ReleaseObject(_handle);
+            ListenerTable.ReleaseObject(ListenerToken);
             _handle = IntPtr.Zero;
             SpotifyMarshalling.CheckError(error);
         }

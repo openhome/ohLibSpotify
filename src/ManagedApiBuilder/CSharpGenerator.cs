@@ -217,7 +217,7 @@ namespace ManagedApiBuilder
                     case "size_t":
                         return new CSharpType("UIntPtr");
                     case "sp_uint64":
-                        return new CSharpType("UIntPtr");
+                        return new CSharpType("ulong");
                 }
                 if (iEnumNames.Contains(namedType.Name))
                 {

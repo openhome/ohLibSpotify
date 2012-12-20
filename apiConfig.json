@@ -5,7 +5,18 @@
         {
             "native-name":"sp_session",
             "managed-name":"SpotifySession",
-            "suppress-functions":["sp_session_release"]
+            "suppress-functions":[
+                "sp_session_release",
+                "sp_session_userdata",
+                "sp_session_create"
+            ]
+        },
+        {
+            "native-name":"sp_track",
+            "managed-name":"Track",
+            "suppress-functions":[
+                "sp_track_set_starred"
+            ]
         },
         {
             "native-name":"sp_audioformat",
@@ -16,6 +27,30 @@
             "native-name":"sp_audio_buffer_stats",
             "managed-name":"AudioBufferStats",
             "force-public":true
+        },
+        {
+            "native-name":"sp_artistbrowse",
+            "managed-name":"ArtistBrowse",
+            "suppress-functions":[
+                "sp_artistbrowse_create",
+                "sp_artistbrowse_release"
+            ]
+        },
+        {
+            "native-name":"sp_albumbrowse",
+            "managed-name":"AlbumBrowse",
+            "suppress-functions":[
+                "sp_albumbrowse_create",
+                "sp_albumbrowse_release"
+            ]
+        },
+        {
+            "native-name":"sp_toplistbrowse",
+            "managed-name":"TopListBrowse",
+            "suppress-functions":[
+                "sp_toplistbrowse_create",
+                "sp_toplistbrowse_release"
+            ]
         }
     ],
     "enums":[
