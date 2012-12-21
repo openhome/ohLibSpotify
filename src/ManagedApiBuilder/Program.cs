@@ -106,7 +106,9 @@ namespace ManagedApiBuilder
                 configuration.Structs,
                 configuration.Enums);
             Console.WriteLine("using System;");
+            Console.WriteLine("using System.Linq;");
             Console.WriteLine("using System.Runtime.InteropServices;");
+            Console.WriteLine("");
             Console.WriteLine("namespace "+configuration.RootNamespace);
             Console.WriteLine("{");
             Console.WriteLine("");

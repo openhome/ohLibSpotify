@@ -234,22 +234,22 @@ namespace ManagedApiBuilder
 
         public string GenerateDllImportFunction(string aIndent, string aFunctionName, FunctionCType aFunctionType)
         {
-            string oldResult = GenerateFunctionDeclaration(
-                aIndent, DllImportTemplate, aFunctionName, aFunctionType);
+            /*string oldResult = GenerateFunctionDeclaration(
+                aIndent, DllImportTemplate, aFunctionName, aFunctionType);*/
             var assembler = AssembleFunction(aFunctionName, aFunctionType, null, null);
             if (assembler == null)
             {
                 Console.WriteLine("/////////////// FAILURE //////////////////");
-                Console.Write(oldResult);
+                //Console.Write(oldResult);
             }
             string newResult = assembler.GeneratePInvokeDeclaration(aIndent);
-            if (newResult != oldResult)
+            /*if (newResult != oldResult)
             {
                 Console.WriteLine("/////////////// MISMATCH /////////////////");
                 Console.Write(oldResult);
                 Console.Write(newResult);
                 throw new Exception("Mismatch!");
-            }
+            }*/
             return newResult;
         }
         public string GenerateRawDelegate(string aIndent, string aFunctionName, FunctionCType aFunctionType)
@@ -355,34 +355,48 @@ namespace ManagedApiBuilder
             var classNames = iHandleNames.ToDictionary(x => x, ManagedNameForNativeType);
             var delegateNames = iDelegateNames.ToDictionary(x => x, ManagedNameForNativeType);
 
+            // TODO: Generate transformers once only.
+            // This will require a different approach for ThisPointerArgumentTransformer.
+
             var transformers = new List<IArgumentTransformer>{
+                // This-pointer must be handled first to avoid it getting
+                // stolen as a normal handle argument.
                 aHandleName == null ? null : new ThisPointerArgumentTransformer{HandleType = aHandleName},
+
+                // C-style empty argument list can go in any order.
                 new VoidArgumentListTransformer(),
+
+                // These consume multiple arguments. They need to happen
+                // early enough that single-argument mappings don't steal
+                // their arguments.
+                new StringReturnTransformer(),
+                new UnknownLengthStringReturnTransformer(),
+                new StringArgumentTransformer(),
+                new HandleArrayArgumentTransformer(classNames),
+                new TrivialArrayArgumentTransformer(),
+
+                // Normal arguments.
                 new FunctionPointerArgumentTransformer(delegateNames),
                 new VoidStarArgumentTransformer(),
                 new HandleArgumentTransformer(classNames),
                 new RefStructArgumentTransformer(structNames),
-                new SpotifyErrorReturnTransformer(),
-                new StringReturnTransformer(),
-                new UnknownLengthStringReturnTransformer(),
-                new StringArgumentTransformer(),
                 new ByteArrayArgumentTransformer(),
                 new TrivialArgumentTransformer(enumNames),
                 new RefHandleArgumentTransformer(iStructNames.Concat(iHandleNames)),
                 new RefArgumentTransformer(enumNames),
+
+                // Return types.
+                // Error-return has to come first out of the return handlers,
+                // otherwise the error will end up being treated as a regular
+                // enum.
+                new SpotifyErrorReturnTransformer(),
                 new TrivialReturnTransformer(enumNames),
                 new HandleReturnTransformer(classNames),
                 new SimpleStringReturnTransformer(),
+                // Pointer-return must come later than handle-return.
                 new PointerReturnTransformer(),
                 new VoidReturnTransformer()}.Where(x=>x!=null).ToList();
-            //Declaration arg1 = new Declaration { Name = "inputString", Kind = "instance", CType = new PointerCType(new NamedCType("char")) };
-            //Declaration arg2 = new Declaration { Name = "flag1", Kind = "instance", CType = new NamedCType("bool") };
-            //Declaration arg3 = new Declaration { Name = "ptrToInt", Kind = "instance", CType = new PointerCType(new NamedCType("int")) };
-            //Console.WriteLine(stringTransformer.CanApply(arg1, null, null));
-            //Declaration arg4 = new Declaration { Name = "outputString", Kind = "instance", CType = new PointerCType(new NamedCType("char")) };
-            //Declaration arg5 = new Declaration { Name = "bufferLength", Kind = "instance", CType = new NamedCType("size_t") };
-            //CType retType = new NamedCType("int");
-            //List<Declaration> arguments = new List<Declaration> { arg1, arg2, arg3, arg4, arg5 };
+
             var assembler = new FunctionAssembler(aFunctionName, aMethodName);
             var nativeFunction = new FunctionSpecificationAnalyser(aFunctionType.Arguments, aFunctionType.ReturnType);
             while (nativeFunction.CurrentParameter != null || nativeFunction.ReturnType != null)
@@ -390,7 +404,7 @@ namespace ManagedApiBuilder
                 var transformer = transformers.FirstOrDefault(x=>x.Apply(nativeFunction, assembler));
                 if (transformer == null)
                 {
-                    Console.WriteLine("/* FAILED AT ARG {0} */", nativeFunction.CurrentParameter != null ? nativeFunction.CurrentParameter.Name : "none");
+                    //Console.WriteLine("/* FAILED AT ARG {0} */", nativeFunction.CurrentParameter != null ? nativeFunction.CurrentParameter.Name : "none");
                     return null; //aIndent + String.Format("// Skipped function '{0}'.\n", aFunctionName);
                 }
                 assembler.NextArgument();

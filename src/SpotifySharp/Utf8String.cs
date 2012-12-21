@@ -1,9 +1,76 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace SpotifySharp
 {
+    internal abstract class NativeArray<T> : IDisposable
+    {
+        IntPtr iPtr;
+        public IntPtr IntPtr { get { return iPtr; } }
+        public int Length { get { return iArrayLength; } }
+        public int AllocatedBytes { get { return iAllocatedBytes; } }
+        int iArrayLength;
+        int iAllocatedBytes;
+
+        //protected abstract void Copy(T[] aSource, IntPtr aTarget, int aLength);
+        protected abstract void Copy(IntPtr aSource, T[] aTarget, int aLength);
+
+        public NativeArray(int aLength)
+        {
+            int elementSize = Marshal.SizeOf(typeof(T));
+            iArrayLength = aLength;
+            iAllocatedBytes = elementSize * iArrayLength;
+            iPtr = Marshal.AllocHGlobal(iAllocatedBytes);
+        }
+        public T[] Value()
+        {
+            T[] array = new T[iArrayLength];
+            Copy(iPtr, array, iArrayLength);
+            return array;
+        }
+
+        public void Dispose()
+        {
+            if (iPtr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(iPtr);
+                iPtr = IntPtr.Zero;
+            }
+        }
+    }
+
+    internal class NativeHandleArray : NativeArray<IntPtr>
+    {
+        public NativeHandleArray(int aLength) : base(aLength) { }
+
+        protected override void Copy(IntPtr aSource, IntPtr[] aTarget, int aLength)
+        {
+            Marshal.Copy(aSource, aTarget, 0, aLength);
+        }
+    }
+
+    internal class NativeByteArray : NativeArray<byte>
+    {
+        public NativeByteArray(int aLength) : base(aLength) { }
+
+        protected override void Copy(IntPtr aSource, byte[] aTarget, int aLength)
+        {
+            Marshal.Copy(aSource, aTarget, 0, aLength);
+        }
+    }
+
+    internal class NativeIntArray : NativeArray<int>
+    {
+        public NativeIntArray(int aLength) : base(aLength) { }
+
+        protected override void Copy(IntPtr aSource, int[] aTarget, int aLength)
+        {
+            Marshal.Copy(aSource, aTarget, 0, aLength);
+        }
+    }
+
     internal class Utf8String : IDisposable
     {
         IntPtr iPtr;
