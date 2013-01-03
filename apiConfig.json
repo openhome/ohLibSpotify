@@ -32,6 +32,7 @@
             "managed-name":"ArtistBrowse",
             "suppress-functions":[
                 "sp_artistbrowse_create",
+                "sp_artistbrowse_add_ref",
                 "sp_artistbrowse_release"
             ]
         },
@@ -40,6 +41,7 @@
             "managed-name":"AlbumBrowse",
             "suppress-functions":[
                 "sp_albumbrowse_create",
+                "sp_albumbrowse_add_ref",
                 "sp_albumbrowse_release"
             ]
         },
@@ -48,6 +50,7 @@
             "managed-name":"TopListBrowse",
             "suppress-functions":[
                 "sp_toplistbrowse_create",
+                "sp_toplistbrowse_add_ref",
                 "sp_toplistbrowse_release"
             ]
         },
