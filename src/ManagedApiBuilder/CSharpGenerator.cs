@@ -239,23 +239,22 @@ namespace ManagedApiBuilder
             var assembler = AssembleFunction(aFunctionName, aFunctionType, null, null);
             if (assembler == null)
             {
-                Console.WriteLine("/////////////// FAILURE //////////////////");
-                //Console.Write(oldResult);
+                return aIndent +"// Failed to generate: " + aFunctionName;
             }
             string newResult = assembler.GeneratePInvokeDeclaration(aIndent);
-            /*if (newResult != oldResult)
-            {
-                Console.WriteLine("/////////////// MISMATCH /////////////////");
-                Console.Write(oldResult);
-                Console.Write(newResult);
-                throw new Exception("Mismatch!");
-            }*/
             return newResult;
         }
+
         public string GenerateRawDelegate(string aIndent, string aFunctionName, FunctionCType aFunctionType)
         {
-            return GenerateFunctionDeclaration(
+            string oldResult = GenerateFunctionDeclaration(
                 aIndent, RawDelegateTemplate, aFunctionName, aFunctionType);
+            var assembler = AssembleFunction(aFunctionName, aFunctionType, null, null);
+            if (assembler == null)
+            {
+                return aIndent +"// Failed to generate: " + aFunctionName;
+            }
+            return assembler.GenerateNativeDelegateDeclaration(aIndent);
         }
 
         string GenerateFunctionDeclaration(string aIndent, string aTemplate, string aFunctionName, FunctionCType aFunctionType)
@@ -379,11 +378,17 @@ namespace ManagedApiBuilder
                 new FunctionPointerArgumentTransformer(delegateNames),
                 new VoidStarArgumentTransformer(),
                 new HandleArgumentTransformer(classNames),
+                // Callback structs get special handling, they need to precede
+                // normal structs which can be passed as ref arguments.
+                new CallbackStructArgumentTransformer(structNames),
                 new RefStructArgumentTransformer(structNames),
                 new ByteArrayArgumentTransformer(),
                 new TrivialArgumentTransformer(enumNames),
                 new RefHandleArgumentTransformer(iStructNames.Concat(iHandleNames)),
                 new RefArgumentTransformer(enumNames),
+                // Pointer-argument comes last because it would match against
+                // other more specific arguments, like handles and ref arguments.
+                new PointerArgumentTransformer(),
 
                 // Return types.
                 // Error-return has to come first out of the return handlers,

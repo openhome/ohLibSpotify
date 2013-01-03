@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace SpotifySharp
@@ -8,6 +10,16 @@ namespace SpotifySharp
     //     for argument names. These may appear in client code using
     //     named arguments.
 
+
+    /// <summary>
+    /// The Spotify Session.
+    /// </summary>
+    /// <remarks>
+    /// All other interaction with Spotify requires first creating a session.
+    /// 
+    /// Currently, only one session may be created per process, but it is possible
+    /// that future versions of the API will allow multiple sessions.
+    /// </remarks>
     public sealed partial class SpotifySession : IDisposable
     {
         // Most of the SpotifySession methods are generated automatically and reside in
@@ -58,15 +70,13 @@ namespace SpotifySharp
             using (var traceFile = SpotifyMarshalling.StringToUtf8(config.TraceFile))
             {
                 IntPtr appKeyPtr = IntPtr.Zero;
-                IntPtr callbacksPtr = IntPtr.Zero;
                 listenerToken = ListenerTable.PutUniqueObject(config.Listener);
                 try
                 {
+                    NativeCallbackAllocation.AddRef();
                     byte[] appkey = config.ApplicationKey;
                     appKeyPtr = Marshal.AllocHGlobal(appkey.Length);
                     Marshal.Copy(config.ApplicationKey, 0, appKeyPtr, appkey.Length);
-                    callbacksPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(sp_session_callbacks)));
-                    Marshal.StructureToPtr(SessionDelegates.SessionCallbacks, callbacksPtr, false);
                     sp_session_config nativeConfig = new sp_session_config {
                         api_version = config.ApiVersion,
                         cache_location = cacheLocation.IntPtr,
@@ -74,8 +84,8 @@ namespace SpotifySharp
                         application_key = appKeyPtr,
                         application_key_size = (UIntPtr)appkey.Length,
                         user_agent = userAgent.IntPtr,
-                        callbacks = callbacksPtr,
-                        userdata = config.UserData,
+                        callbacks = SessionDelegates.CallbacksPtr,
+                        userdata = listenerToken,
                         compress_playlists = config.CompressPlaylists,
                         dont_save_metadata_for_playlists = config.DontSaveMetadataForPlaylists,
                         initially_unload_playlists = config.InitiallyUnloadPlaylists,
@@ -90,11 +100,11 @@ namespace SpotifySharp
                     // we have already done ListenerTable.PutUniqueObject before this point.
                     var error = NativeMethods.sp_session_create(ref nativeConfig, ref sessionPtr);
                     SpotifyMarshalling.CheckError(error);
-                    // old: SpotifyMarshalling.RegisterCallbackObject(sessionPtr, IntPtr.Zero, config.Listener);
                 }
                 catch
                 {
                     ListenerTable.ReleaseObject(listenerToken);
+                    NativeCallbackAllocation.ReleaseRef();
                     throw;
                 }
                 finally
@@ -103,14 +113,10 @@ namespace SpotifySharp
                     {
                         Marshal.FreeHGlobal(appKeyPtr);
                     }
-                    if (callbacksPtr != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(callbacksPtr);
-                    }
                 }
             }
             
-            SpotifySession session = SessionTable.GetUniqueObject(sessionPtr); // SpotifyMarshalling.GetManagedSession(sessionPtr);
+            SpotifySession session = SessionTable.GetUniqueObject(sessionPtr);
             session.Listener = config.Listener;
             session.ListenerToken = listenerToken;
             return session;
@@ -122,7 +128,7 @@ namespace SpotifySharp
             var error = NativeMethods.sp_session_release(_handle);
             SessionTable.ReleaseObject(_handle);
             ListenerTable.ReleaseObject(ListenerToken);
-            //SpotifyMarshalling.ReleaseManagedSession(_handle);
+            NativeCallbackAllocation.ReleaseRef();
             _handle = IntPtr.Zero;
             SpotifyMarshalling.CheckError(error);
         }
@@ -138,8 +144,24 @@ namespace SpotifySharp
     /// </remarks>
     static class SessionDelegates
     {
-        public static readonly sp_session_callbacks SessionCallbacks = CreateSessionCallbacks();
-        static sp_session_callbacks CreateSessionCallbacks()
+        static readonly sp_session_callbacks Callbacks = CreateCallbacks();
+        public static IntPtr CallbacksPtr;
+
+        public static void AllocNativeCallbacks()
+        {
+            int bytes = Marshal.SizeOf(typeof(sp_session_callbacks));
+            IntPtr structPtr = Marshal.AllocHGlobal(bytes);
+            Marshal.StructureToPtr(Callbacks, structPtr, false);
+            CallbacksPtr = structPtr;
+        }
+
+        public static void FreeNativeCallbacks()
+        {
+            Marshal.FreeHGlobal(CallbacksPtr);
+            CallbacksPtr = IntPtr.Zero;
+        }
+
+        static sp_session_callbacks CreateCallbacks()
         {
             return new sp_session_callbacks
             {
@@ -344,7 +366,7 @@ namespace SpotifySharp
         public byte[] ApplicationKey { get; set; }
         public string UserAgent { get; set; }
         public SpotifySessionListener Listener { get; set; }
-        public IntPtr UserData { get; set; }
+        //public IntPtr UserData { get; set; }
         //public IntPtr @userdata;
         public bool CompressPlaylists { get; set; }
         public bool DontSaveMetadataForPlaylists { get; set; }
@@ -356,4 +378,51 @@ namespace SpotifySharp
         public string CACertsFilename { get; set; }
         public string TraceFile { get; set; }
     }
+
+    /// <summary>
+    /// Manage allocation and deallocation of structs containing callback pointers.
+    /// </summary>
+    /// <remarks>
+    /// For each of the three struct-of-callbacks types used in libspotify, we have
+    /// a single global instance that points to our static callback methods. In a
+    /// C program we'd declare it as a global variable with simple static initialization
+    /// for its contained function pointers, but in .NET we can't do that, so we
+    /// need to allocate it on the native heap. To future-proof against libspotify
+    /// supporting multiple sessions, we call AddRef whenever we create a session,
+    /// and ReleaseRef whenever we destroy a session, so that our callback structures
+    /// remain allocated whenever there is at least one spotify session extant.
+    /// </remarks>
+    static class NativeCallbackAllocation
+    {
+        static readonly object Monitor = new object();
+        static int RefCount;
+        public static void AddRef()
+        {
+            lock (Monitor)
+            {
+                if (RefCount == 0)
+                {
+                    PlaylistDelegates.AllocNativeCallbacks();
+                    SessionDelegates.AllocNativeCallbacks();
+                    //PlaylistContainerDelegates.AllocNativeCallbacks(); TO BE ADDED
+                }
+                RefCount++;
+            }
+        }
+        public static void ReleaseRef()
+        {
+            lock (Monitor)
+            {
+                RefCount--;
+                if (RefCount == 0)
+                {
+                    PlaylistDelegates.FreeNativeCallbacks();
+                    SessionDelegates.FreeNativeCallbacks();
+                    //PlaylistContainerDelegates.FreeNativeCallbacks();
+                }
+            }
+        }
+
+    }
+
 }

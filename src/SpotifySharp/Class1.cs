@@ -26,6 +26,88 @@ namespace SpotifySharp
     }*/
 
 
+    internal class UserDataTable<T>
+    {
+        object _monitor = new object();
+        class Entry
+        {
+            public IntPtr NativeUserdata;
+            public object ManagedUserdata;
+            public T Listener;
+        }
+        readonly Dictionary<Tuple<IntPtr, object>, Entry> _managedTable = new Dictionary<Tuple<IntPtr, object>, Entry>();
+        readonly Dictionary<IntPtr, Entry> _nativeTable = new Dictionary<IntPtr, Entry>();
+        int _counter = 100; // Starting point is arbitrary, but should help distinguish real tokens from mistakes when debugging.
+        public IntPtr PutListener(IntPtr owner, T listener, object userdata)
+        {
+            lock (_monitor)
+            {
+                _counter += 1;
+                var token = (IntPtr) _counter;
+                var managedKey = Tuple.Create(owner, userdata);
+                if (_managedTable.ContainsKey(managedKey))
+                {
+                    throw new ArgumentException("This userdata is already registered.", "userdata");
+                }
+                var entry = new Entry
+                {
+                    NativeUserdata = token,
+                    ManagedUserdata = userdata,
+                    Listener = listener
+                };
+
+                _managedTable[managedKey] = entry;
+                _nativeTable[token] = entry;
+
+                return token;
+            }
+        }
+        public void RemoveListener(IntPtr owner, object userdata)
+        {
+            lock (_monitor)
+            {
+                var managedKey = Tuple.Create(owner, userdata);
+                Entry entry;
+                if (!_managedTable.TryGetValue(managedKey, out entry))
+                {
+                    throw new KeyNotFoundException("RemoveListener: Key not found");
+                }
+                _managedTable.Remove(managedKey);
+                _nativeTable.Remove(entry.NativeUserdata);
+            }
+        }
+        public bool TryGetNativeUserdata(IntPtr owner, object managedUserdata, out IntPtr nativeUserdata)
+        {
+            lock (_monitor)
+            {
+                var managedKey = Tuple.Create(owner, managedUserdata);
+                Entry entry;
+                if (!_managedTable.TryGetValue(managedKey, out entry))
+                {
+                    nativeUserdata = IntPtr.Zero;
+                    return false;
+                }
+                nativeUserdata = entry.NativeUserdata;
+                return true;
+            }
+        }
+        public bool TryGetListenerFromNativeUserdata(IntPtr nativeUserdata, out T listener, out object managedUserdata)
+        {
+            lock (_monitor)
+            {
+                Entry entry;
+                if (!_nativeTable.TryGetValue(nativeUserdata, out entry))
+                {
+                    listener = default(T);
+                    managedUserdata = null;
+                    return false;
+                }
+                listener = entry.Listener;
+                managedUserdata = entry.ManagedUserdata;
+                return true;
+            }
+        }
+    }
     internal class ManagedListenerTable<T>
     {
         object _monitor = new object();
@@ -100,16 +182,6 @@ namespace SpotifySharp
     }
 
 
-
-    public partial class Track
-    {
-        public static void SetStarred(SpotifySession session, IEnumerable<Track> tracks, bool star)
-        {
-            throw new NotImplementedException();
-            // TODO: Need to fix NativeMethods.sp_track_set_starred to marshal using an array.
-            //NativeMethods.sp_track_set_starred(
-        }
-    }
 
     public delegate void ImageLoaded(Image @image);
     public delegate void InboxPostComplete(Inbox @result);

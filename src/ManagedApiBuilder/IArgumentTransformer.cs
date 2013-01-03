@@ -110,6 +110,44 @@ namespace ManagedApiBuilder
         }
     }
 
+    /// <summary>
+    /// Handle arguments that are pointers to structures of callbacks.
+    /// </summary>
+    /// <remarks>
+    /// Callback structs are expected to live beyond the call to the native function,
+    /// so they can't be marshalled as ref parameters. Instead use IntPtr and the
+    /// caller will need to wrangle Marshal.StructureToPtr appropriately.
+    /// We identify callback structs simply by their suffix, "_callbacks".
+    /// </remarks>
+    class CallbackStructArgumentTransformer : IArgumentTransformer
+    {
+        readonly Dictionary<string, string> iHandlesToStructNames;
+
+        public CallbackStructArgumentTransformer(IEnumerable<KeyValuePair<string, string>> aHandlesToStructNames)
+        {
+            iHandlesToStructNames = aHandlesToStructNames.Where(x=>x.Key.EndsWith("_callbacks")).ToDictionary(x=>x.Key, x=>x.Value);
+        }
+
+        public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
+        {
+            var pointerType = aNativeFunction.CurrentParameterType as PointerCType;
+            if (pointerType == null) return false;
+            var namedType = pointerType.BaseType as NamedCType;
+            if (namedType == null) return false;
+            string structName;
+            if (!iHandlesToStructNames.TryGetValue(namedType.Name, out structName))
+            {
+                return false;
+            }
+
+            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, null);
+            aAssembler.SuppressManagedWrapper();
+            //aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, new CSharpType(className));
+            aNativeFunction.ConsumeArgument();
+            return true;
+        }
+    }
+
     class RefStructArgumentTransformer : IArgumentTransformer
     {
         readonly Dictionary<string, string> iHandlesToStructNames;
@@ -701,6 +739,31 @@ namespace ManagedApiBuilder
             switch (namedType.Name)
             {
                 case "byte":
+                    break;
+                default:
+                    return false;
+            }
+
+            aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, null);
+            aAssembler.SuppressManagedWrapper();
+            aNativeFunction.ConsumeArgument();
+            return true;
+        }
+    }
+
+    class PointerArgumentTransformer : IArgumentTransformer
+    {
+        public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
+        {
+            var pointerType = aNativeFunction.CurrentParameterType as PointerCType;
+            if (pointerType == null) return false;
+            var namedType = pointerType.BaseType as NamedCType;
+            if (namedType == null) return false;
+
+            switch (namedType.Name)
+            {
+                case "byte":
+                case "void":
                     break;
                 default:
                     return false;

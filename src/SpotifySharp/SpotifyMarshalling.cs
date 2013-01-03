@@ -98,6 +98,20 @@ namespace SpotifySharp
             return nativeArray;
         }
 
+        public static IntPtr[] NativeHandleArrayToArray(IntPtr aHandles, int aLength)
+        {
+            IntPtr[] array = new IntPtr[aLength];
+            Marshal.Copy(aHandles, array, 0, aLength);
+            return array;
+        }
+
+        public static int[] NativeIntArrayToArray(IntPtr aInts, int aLength)
+        {
+            int[] array = new int[aLength];
+            Marshal.Copy(aInts, array, 0, aLength);
+            return array;
+        }
+
         public static void CheckError(SpotifyError aError)
         {
             if (aError == SpotifyError.Ok) return;

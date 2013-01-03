@@ -15,7 +15,6 @@
             "native-name":"sp_track",
             "managed-name":"Track",
             "suppress-functions":[
-                "sp_track_set_starred"
             ]
         },
         {
@@ -50,6 +49,14 @@
             "suppress-functions":[
                 "sp_toplistbrowse_create",
                 "sp_toplistbrowse_release"
+            ]
+        },
+        {
+            "native-name":"sp_playlist",
+            "managed-name":"Playlist",
+            "suppress-functions":[
+                "sp_playlist_add_callbacks",
+                "sp_playlist_remove_callbacks"
             ]
         }
     ],
