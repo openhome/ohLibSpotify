@@ -404,7 +404,7 @@ namespace SpotifySharp
                 {
                     PlaylistDelegates.AllocNativeCallbacks();
                     SessionDelegates.AllocNativeCallbacks();
-                    //PlaylistContainerDelegates.AllocNativeCallbacks(); TO BE ADDED
+                    PlaylistContainerDelegates.AllocNativeCallbacks();
                 }
                 RefCount++;
             }
@@ -418,7 +418,7 @@ namespace SpotifySharp
                 {
                     PlaylistDelegates.FreeNativeCallbacks();
                     SessionDelegates.FreeNativeCallbacks();
-                    //PlaylistContainerDelegates.FreeNativeCallbacks();
+                    PlaylistContainerDelegates.FreeNativeCallbacks();
                 }
             }
         }

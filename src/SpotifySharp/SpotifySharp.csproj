@@ -49,6 +49,7 @@
     <Compile Include="Class1.cs" />
     <Compile Include="GeneratedCode.cs" />
     <Compile Include="Playlist.cs" />
+    <Compile Include="PlaylistContainer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RiffWriter.cs" />
     <Compile Include="Search.cs" />

@@ -760,6 +760,8 @@ namespace ManagedApiBuilder
             var namedType = pointerType.BaseType as NamedCType;
             if (namedType == null) return false;
 
+            // Accept anything.
+            /*
             switch (namedType.Name)
             {
                 case "byte":
@@ -767,7 +769,7 @@ namespace ManagedApiBuilder
                     break;
                 default:
                     return false;
-            }
+            }*/
 
             aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, null);
             aAssembler.SuppressManagedWrapper();

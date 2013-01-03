@@ -355,6 +355,26 @@ namespace SpotifySharp
             }
         }
 
+        class ContainerListener : PlaylistContainerListener
+        {
+            public override void ContainerLoaded(PlaylistContainer pc, object userdata)
+            {
+                Console.WriteLine("ContainerLoaded.");
+            }
+            public override void  PlaylistAdded(PlaylistContainer pc, Playlist playlist, int position, object userdata)
+            {
+                Console.WriteLine("PlaylistAdded: {0} at index {1} - {2} tracks", playlist.Name(), position, playlist.NumTracks());
+            }
+            public override void PlaylistMoved(PlaylistContainer pc, Playlist playlist, int position, int new_position, object userdata)
+            {
+                Console.WriteLine("PlaylistMoved: {0} from index {1} to index {2}", playlist.Name(), position, new_position);
+            }
+            public override void PlaylistRemoved(PlaylistContainer pc, Playlist playlist, int position, object userdata)
+            {
+                Console.WriteLine("PlaylistRemoved: {0} from index {1}", playlist.Name(), position);
+            }
+        }
+
         static void Main(string[] args)
         {
             ManualResetEvent ev = new ManualResetEvent(false);
@@ -408,6 +428,7 @@ namespace SpotifySharp
                     }
                 });
                 consoleThread.Start();
+
 
                 while (!finished)
                 {
@@ -472,6 +493,7 @@ namespace SpotifySharp
         class Callbacks2 : SpotifySessionListener
         {
             ManualResetEvent iEv;
+            ContainerListener iContainerListener = new ContainerListener();
 
             public Callbacks2(ManualResetEvent aEv)
             {
@@ -481,10 +503,13 @@ namespace SpotifySharp
             public override void LoggedIn(SpotifySession session, SpotifyError error)
             {
                 Console.WriteLine("logged_in(session, {0})", error);
+
+                session.Playlistcontainer().AddCallbacks(iContainerListener, iContainerListener);
             }
             public override void LoggedOut(SpotifySession session)
             {
                 Console.WriteLine("logged_out(session)");
+                session.Playlistcontainer().RemoveCallbacks(iContainerListener);
             }
             void DumpPlaylist(SpotifySession session, Playlist playlist)
             {

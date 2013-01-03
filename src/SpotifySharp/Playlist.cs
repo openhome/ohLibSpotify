@@ -32,6 +32,14 @@ namespace SpotifySharp
             NativeMethods.sp_playlist_remove_callbacks(this._handle, callbacks, nativeUserdata);
             ListenerTable.RemoveListener(this._handle, nativeUserdata);
         }
+        public string[] Subscribers()
+        {
+            IntPtr subscribers = NativeMethods.sp_playlist_subscribers(this._handle);
+            string[] retval = SpotifyMarshalling.SubscribersToStrings(subscribers);
+            var error = NativeMethods.sp_playlist_subscribers_free(subscribers);
+            SpotifyMarshalling.CheckError(error);
+            return retval;
+        }
     }
 
     public abstract class PlaylistListener

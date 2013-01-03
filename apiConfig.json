@@ -1,5 +1,5 @@
 {
-    "ignore":["sp_uint64", "bool", "byte"],
+    "ignore":["sp_uint64", "bool", "byte", "sp_subscribers"],
     "namespace":"SpotifySharp",
     "structs":[
         {
@@ -60,6 +60,14 @@
             "suppress-functions":[
                 "sp_playlist_add_callbacks",
                 "sp_playlist_remove_callbacks"
+            ]
+        },
+        {
+            "native-name":"sp_playlistcontainer",
+            "managed-name":"PlaylistContainer",
+            "suppress-functions":[
+                "sp_playlistcontainer_add_callbacks",
+                "sp_playlistcontainer_remove_callbacks"
             ]
         }
     ],
