@@ -44,10 +44,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Album.cs" />
     <Compile Include="AlbumBrowse.cs" />
+    <Compile Include="Artist.cs" />
     <Compile Include="ArtistBrowse.cs" />
     <Compile Include="Class1.cs" />
     <Compile Include="GeneratedCode.cs" />
+    <Compile Include="Image.cs" />
     <Compile Include="Playlist.cs" />
     <Compile Include="PlaylistContainer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

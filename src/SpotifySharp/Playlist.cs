@@ -40,6 +40,17 @@ namespace SpotifySharp
             SpotifyMarshalling.CheckError(error);
             return retval;
         }
+        public ImageId GetImage()
+        {
+            using (var buffer = new NativeByteArray(20))
+            {
+                if (NativeMethods.sp_playlist_get_image(_handle, buffer.IntPtr))
+                {
+                    return new ImageId(buffer.Value());
+                }
+                return null;
+            }
+        }
     }
 
     public abstract class PlaylistListener
@@ -54,17 +65,56 @@ namespace SpotifySharp
         public virtual void TrackCreatedChanged(Playlist pl, int @position, User @user, int @when, object userdata) { }
         public virtual void TrackSeenChanged(Playlist pl, int @position, bool @seen, object userdata) { }
         public virtual void DescriptionChanged(Playlist pl, string @desc, object userdata) { }
-        public virtual void ImageChanged(Playlist pl, ImageToken @image, object userdata) { }
+        public virtual void ImageChanged(Playlist pl, ImageId @image, object userdata) { }
         public virtual void TrackMessageChanged(Playlist pl, int @position, string @message, object userdata) { }
         public virtual void SubscribersChanged(Playlist pl, object userdata) { }
     }
 
-    public class ImageToken
+    public class ImageId
     {
-        internal IntPtr _handle;
-        internal ImageToken(IntPtr handle)
+        IntPtr _ptr;
+        byte[] _buffer;
+        internal ImageId(IntPtr ptr)
         {
-            _handle = handle;
+            _ptr = ptr;
+        }
+        internal ImageId(byte[] buffer)
+        {
+            _buffer = buffer;
+        }
+        internal LockedImageId Lock()
+        {
+            if (_buffer != null)
+            {
+                return new LockedImageId(_buffer);
+            }
+            return new LockedImageId(_ptr);
+        }
+    }
+
+    internal class LockedImageId : IDisposable
+    {
+        internal IntPtr Ptr { get; set; }
+        bool _owned;
+        public LockedImageId(IntPtr ptr)
+        {
+            _owned = false;
+            Ptr = ptr;
+        }
+        public LockedImageId(byte[] buffer)
+        {
+            _owned = true;
+            Ptr = Marshal.AllocHGlobal(buffer.Length);
+            Marshal.Copy(buffer, 0, Ptr, buffer.Length);
+        }
+        public void Dispose()
+        {
+            if (_owned)
+            {
+                Marshal.FreeHGlobal(Ptr);
+                _owned = false;
+                Ptr = IntPtr.Zero;
+            }
         }
     }
 
@@ -175,7 +225,7 @@ namespace SpotifySharp
         static void image_changed(IntPtr @pl, IntPtr @image, IntPtr @userdata)
         {
             var context = GetListener(pl, userdata);
-            context.Listener.ImageChanged(context.Playlist, new ImageToken(image), context.Userdata);
+            context.Listener.ImageChanged(context.Playlist, new ImageId(image), context.Userdata);
         }
         static void track_message_changed(IntPtr @pl, int @position, IntPtr @message, IntPtr @userdata)
         {

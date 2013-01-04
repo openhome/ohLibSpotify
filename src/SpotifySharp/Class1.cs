@@ -183,6 +183,6 @@ namespace SpotifySharp
 
 
 
-    public delegate void ImageLoaded(Image @image);
+    //public delegate void ImageLoaded(Image @image);
     public delegate void InboxPostComplete(Inbox @result);
 }

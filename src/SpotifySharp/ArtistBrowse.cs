@@ -38,5 +38,10 @@ namespace SpotifySharp
             _handle = IntPtr.Zero;
             SpotifyMarshalling.CheckError(error);
         }
+
+        public ImageId Portrait(int index)
+        {
+            return new ImageId(NativeMethods.sp_artistbrowse_portrait(this._handle, index));
+        }
     }
 }

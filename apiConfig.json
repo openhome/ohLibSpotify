@@ -33,7 +33,8 @@
             "suppress-functions":[
                 "sp_artistbrowse_create",
                 "sp_artistbrowse_add_ref",
-                "sp_artistbrowse_release"
+                "sp_artistbrowse_release",
+                "sp_artistbrowse_portrait"
             ]
         },
         {
@@ -59,7 +60,10 @@
             "managed-name":"Playlist",
             "suppress-functions":[
                 "sp_playlist_add_callbacks",
-                "sp_playlist_remove_callbacks"
+                "sp_playlist_remove_callbacks",
+                "sp_playlist_subscribers",
+                "sp_playlist_subscribers_free",
+                "sp_playlist_get_image"
             ]
         },
         {
@@ -68,6 +72,31 @@
             "suppress-functions":[
                 "sp_playlistcontainer_add_callbacks",
                 "sp_playlistcontainer_remove_callbacks"
+            ]
+        },
+        {
+            "native-name":"sp_image",
+            "managed-name":"Image",
+            "suppress-functions":[
+                "sp_image_create",
+                "sp_image_add_load_callback",
+                "sp_image_remove_load_callback",
+                "sp_image_data",
+                "sp_image_image_id"
+            ]
+        },
+        {
+            "native-name":"sp_artist",
+            "managed-name":"Artist",
+            "suppress-functions":[
+                "sp_artist_portrait"
+            ]
+        },
+        {
+            "native-name":"sp_album",
+            "managed-name":"Album",
+            "suppress-functions":[
+                "sp_album_portrait"
             ]
         }
     ],
