@@ -96,7 +96,7 @@
             "native-name":"sp_album",
             "managed-name":"Album",
             "suppress-functions":[
-                "sp_album_portrait"
+                "sp_album_cover"
             ]
         }
     ],
