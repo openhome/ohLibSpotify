@@ -70,7 +70,7 @@ namespace SpotifySharp
             using (var traceFile = SpotifyMarshalling.StringToUtf8(config.TraceFile))
             {
                 IntPtr appKeyPtr = IntPtr.Zero;
-                listenerToken = ListenerTable.PutUniqueObject(config.Listener);
+                listenerToken = ListenerTable.PutUniqueObject(config.Listener, config.UserData);
                 try
                 {
                     NativeCallbackAllocation.AddRef();
@@ -118,6 +118,7 @@ namespace SpotifySharp
             
             SpotifySession session = SessionTable.GetUniqueObject(sessionPtr);
             session.Listener = config.Listener;
+            session.UserData = config.UserData;
             session.ListenerToken = listenerToken;
             return session;
         }
@@ -131,6 +132,29 @@ namespace SpotifySharp
             NativeCallbackAllocation.ReleaseRef();
             _handle = IntPtr.Zero;
             SpotifyMarshalling.CheckError(error);
+        }
+
+        public object UserData { get; internal set; }
+        public int OfflineTracksToSync()
+        {
+            return NativeMethods.sp_offline_tracks_to_sync(_handle);
+        }
+        public int OfflineNumPlaylists()
+        {
+            return NativeMethods.sp_offline_num_playlists(_handle);
+        }
+        public bool OfflineSyncGetStatus(ref OfflineSyncStatus status)
+        {
+            if (NativeMethods.sp_offline_sync_get_status(_handle, ref status))
+            {
+                return true;
+            }
+            status = new OfflineSyncStatus();
+            return false;
+        }
+        public int OfflineTimeLeft()
+        {
+            return NativeMethods.sp_offline_time_left(_handle);
         }
     }
 
@@ -199,7 +223,12 @@ namespace SpotifySharp
             SessionAndListener retVal = new SessionAndListener();
             retVal.Session = SpotifySession.SessionTable.GetUniqueObject(nativeSession); //  SpotifyMarshalling.GetManagedSession(nativeSession);
             IntPtr userdata = NativeMethods.sp_session_userdata(nativeSession);
-            retVal.Listener = SpotifySession.ListenerTable.GetObject(userdata);
+            object managedUserdata;
+            if (SpotifySession.ListenerTable.TryGetListener(userdata, out retVal.Listener, out managedUserdata))
+            {
+                return retVal;
+            }
+            retVal.Listener = null;
             return retVal;
         }
         
@@ -366,7 +395,7 @@ namespace SpotifySharp
         public byte[] ApplicationKey { get; set; }
         public string UserAgent { get; set; }
         public SpotifySessionListener Listener { get; set; }
-        //public IntPtr UserData { get; set; }
+        public object UserData { get; set; }
         //public IntPtr @userdata;
         public bool CompressPlaylists { get; set; }
         public bool DontSaveMetadataForPlaylists { get; set; }

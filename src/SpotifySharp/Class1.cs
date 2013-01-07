@@ -112,28 +112,37 @@ namespace SpotifySharp
     {
         object _monitor = new object();
         int _counter = 100;
-        readonly Dictionary<IntPtr, T> _table = new Dictionary<IntPtr, T>();
+        struct Entry
+        {
+            public T Listener;
+            public object Userdata;
+        }
+        readonly Dictionary<IntPtr, Entry> _table = new Dictionary<IntPtr, Entry>();
 
-        public IntPtr PutUniqueObject(T obj)
+        public IntPtr PutUniqueObject(T obj, object userdata)
         {
             lock (_monitor)
             {
                 _counter += 1;
-                _table[(IntPtr)_counter] = obj;
+                _table[(IntPtr)_counter] = new Entry { Listener = obj, Userdata = userdata };
                 return (IntPtr)_counter;
             }
         }
 
-        public T GetObject(IntPtr ptr)
+        public bool TryGetListener(IntPtr ptr, out T listener, out object userdata)
         {
             lock (_monitor)
             {
-                T retval;
-                if (_table.TryGetValue(ptr, out retval))
+                Entry entry;
+                if (_table.TryGetValue(ptr, out entry))
                 {
-                    return retval;
+                    listener = entry.Listener;
+                    userdata = entry.Userdata;
+                    return true;
                 }
-                return default(T);
+                listener = default(T);
+                userdata = null;
+                return false;
             }
         }
 
@@ -184,5 +193,5 @@ namespace SpotifySharp
 
 
     //public delegate void ImageLoaded(Image @image);
-    public delegate void InboxPostComplete(Inbox @result);
+    //public delegate void InboxPostComplete(Inbox @result);
 }

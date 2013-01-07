@@ -51,11 +51,13 @@
     <Compile Include="Class1.cs" />
     <Compile Include="GeneratedCode.cs" />
     <Compile Include="Image.cs" />
+    <Compile Include="Inbox.cs" />
     <Compile Include="Playlist.cs" />
     <Compile Include="PlaylistContainer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RiffWriter.cs" />
     <Compile Include="Search.cs" />
+    <Compile Include="Spotify.cs" />
     <Compile Include="SpotifyException.cs" />
     <Compile Include="SpotifyMarshalling.cs" />
     <Compile Include="SpotifySession.cs" />

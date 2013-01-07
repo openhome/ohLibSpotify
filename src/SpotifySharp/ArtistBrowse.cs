@@ -2,7 +2,7 @@
 
 namespace SpotifySharp
 {
-    public delegate void ArtistBrowseComplete(ArtistBrowse @result);
+    public delegate void ArtistBrowseComplete(ArtistBrowse @result, object @userdata);
 
     public sealed partial class ArtistBrowse : IDisposable
     {
@@ -11,18 +11,22 @@ namespace SpotifySharp
 
         IntPtr ListenerToken { get; set; }
 
-        static void ArtistBrowseComplete(IntPtr result, IntPtr userdata)
+        static void ArtistBrowseComplete(IntPtr result, IntPtr nativeUserdata)
         {
             var browse = BrowseTable.GetUniqueObject(result);
-            var callback = ListenerTable.GetObject(userdata);
-            callback(browse);
+            ArtistBrowseComplete listener;
+            object managedUserdata;
+            if (ListenerTable.TryGetListener(nativeUserdata, out listener, out managedUserdata))
+            {
+                listener(browse, managedUserdata);
+            }
         }
 
         static readonly artistbrowse_complete_cb ArtistBrowseCompleteDelegate = ArtistBrowseComplete;
 
-        public static ArtistBrowse Create(SpotifySession session, Artist artist, ArtistBrowseType type, ArtistBrowseComplete callback)
+        public static ArtistBrowse Create(SpotifySession session, Artist artist, ArtistBrowseType type, ArtistBrowseComplete callback, object userdata)
         {
-            IntPtr listenerToken = ListenerTable.PutUniqueObject(callback);
+            IntPtr listenerToken = ListenerTable.PutUniqueObject(callback, userdata);
             IntPtr ptr = NativeMethods.sp_artistbrowse_create(session._handle, artist._handle, type, ArtistBrowseCompleteDelegate, listenerToken);
             ArtistBrowse browse = BrowseTable.GetUniqueObject(ptr);
             browse.ListenerToken = listenerToken;

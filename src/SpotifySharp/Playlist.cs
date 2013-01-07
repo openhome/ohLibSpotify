@@ -7,13 +7,6 @@ namespace SpotifySharp
 {
     public sealed partial class Playlist
     {
-        //internal static readonly ManagedWrapperTable<Playlist> WrapperTable = new ManagedWrapperTable<Playlist>(x=>new Playlist(x));
-
-        internal struct ListenerAndUserdata
-        {
-            public PlaylistListener Listener;
-            public object Userdata;
-        }
         internal static readonly UserDataTable<PlaylistListener> ListenerTable = new UserDataTable<PlaylistListener>();
         public void AddCallbacks(PlaylistListener listener, object userdata)
         {
@@ -70,53 +63,6 @@ namespace SpotifySharp
         public virtual void SubscribersChanged(Playlist pl, object userdata) { }
     }
 
-    public class ImageId
-    {
-        IntPtr _ptr;
-        byte[] _buffer;
-        internal ImageId(IntPtr ptr)
-        {
-            _ptr = ptr;
-        }
-        internal ImageId(byte[] buffer)
-        {
-            _buffer = buffer;
-        }
-        internal LockedImageId Lock()
-        {
-            if (_buffer != null)
-            {
-                return new LockedImageId(_buffer);
-            }
-            return new LockedImageId(_ptr);
-        }
-    }
-
-    internal class LockedImageId : IDisposable
-    {
-        internal IntPtr Ptr { get; set; }
-        bool _owned;
-        public LockedImageId(IntPtr ptr)
-        {
-            _owned = false;
-            Ptr = ptr;
-        }
-        public LockedImageId(byte[] buffer)
-        {
-            _owned = true;
-            Ptr = Marshal.AllocHGlobal(buffer.Length);
-            Marshal.Copy(buffer, 0, Ptr, buffer.Length);
-        }
-        public void Dispose()
-        {
-            if (_owned)
-            {
-                Marshal.FreeHGlobal(Ptr);
-                _owned = false;
-                Ptr = IntPtr.Zero;
-            }
-        }
-    }
 
     static class PlaylistDelegates
     {

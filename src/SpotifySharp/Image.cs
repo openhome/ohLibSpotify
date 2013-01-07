@@ -7,12 +7,6 @@ namespace SpotifySharp
 {
     public sealed partial class Image
     {
-
-        internal struct ListenerAndUserdata
-        {
-            public ImageLoaded Listener;
-            public object Userdata;
-        }
         internal static readonly UserDataTable<ImageLoaded> ListenerTable = new UserDataTable<ImageLoaded>();
         public void AddLoadCallbacks(ImageLoaded listener, object userdata)
         {
@@ -87,5 +81,54 @@ namespace SpotifySharp
             context.Listener(context.Image, context.Userdata);
         }
     }
+
     public delegate void ImageLoaded(Image image, object userdata);
+
+    public class ImageId
+    {
+        IntPtr _ptr;
+        byte[] _buffer;
+        internal ImageId(IntPtr ptr)
+        {
+            _ptr = ptr;
+        }
+        internal ImageId(byte[] buffer)
+        {
+            _buffer = buffer;
+        }
+        internal LockedImageId Lock()
+        {
+            if (_buffer != null)
+            {
+                return new LockedImageId(_buffer);
+            }
+            return new LockedImageId(_ptr);
+        }
+    }
+
+    internal class LockedImageId : IDisposable
+    {
+        internal IntPtr Ptr { get; set; }
+        bool _owned;
+        public LockedImageId(IntPtr ptr)
+        {
+            _owned = false;
+            Ptr = ptr;
+        }
+        public LockedImageId(byte[] buffer)
+        {
+            _owned = true;
+            Ptr = Marshal.AllocHGlobal(buffer.Length);
+            Marshal.Copy(buffer, 0, Ptr, buffer.Length);
+        }
+        public void Dispose()
+        {
+            if (_owned)
+            {
+                Marshal.FreeHGlobal(Ptr);
+                _owned = false;
+                Ptr = IntPtr.Zero;
+            }
+        }
+    }
 }

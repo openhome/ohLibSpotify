@@ -7,11 +7,6 @@ namespace SpotifySharp
 {
     public sealed partial class PlaylistContainer
     {
-        internal struct ListenerAndUserdata
-        {
-            public PlaylistContainerListener Listener;
-            public object Userdata;
-        }
         internal static readonly UserDataTable<PlaylistContainerListener> ListenerTable = new UserDataTable<PlaylistContainerListener>();
         public void AddCallbacks(PlaylistContainerListener listener, object userdata)
         {

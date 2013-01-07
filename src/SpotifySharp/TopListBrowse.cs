@@ -2,7 +2,7 @@
 
 namespace SpotifySharp
 {
-    public delegate void TopListBrowseComplete(TopListBrowse @result);
+    public delegate void TopListBrowseComplete(TopListBrowse @result, object userdata);
     public sealed partial class TopListBrowse : IDisposable
     {
         internal static readonly ManagedWrapperTable<TopListBrowse> BrowseTable = new ManagedWrapperTable<TopListBrowse>(x=>new TopListBrowse(x));
@@ -10,20 +10,24 @@ namespace SpotifySharp
 
         IntPtr ListenerToken { get; set; }
 
-        static void TopListBrowseComplete(IntPtr result, IntPtr userdata)
+        static void TopListBrowseComplete(IntPtr result, IntPtr nativeUserdata)
         {
             var browse = BrowseTable.GetUniqueObject(result);
-            var callback = ListenerTable.GetObject(userdata);
-            callback(browse);
+            TopListBrowseComplete listener;
+            object managedUserdata;
+            if (ListenerTable.TryGetListener(nativeUserdata, out listener, out managedUserdata))
+            {
+                listener(browse, managedUserdata);
+            }
         }
 
         static readonly toplistbrowse_complete_cb TopListBrowseCompleteDelegate = TopListBrowseComplete;
 
-        public static TopListBrowse Create(SpotifySession session, TopListType type, TopListRegion region, string username, TopListBrowseComplete callback)
+        public static TopListBrowse Create(SpotifySession session, TopListType type, TopListRegion region, string username, TopListBrowseComplete callback, object userdata)
         {
             using (var utf8_username = SpotifyMarshalling.StringToUtf8(username))
             {
-                IntPtr listenerToken = ListenerTable.PutUniqueObject(callback);
+                IntPtr listenerToken = ListenerTable.PutUniqueObject(callback, userdata);
                 IntPtr ptr = NativeMethods.sp_toplistbrowse_create(session._handle, type, region, utf8_username.IntPtr, TopListBrowseCompleteDelegate, listenerToken);
                 TopListBrowse browse = BrowseTable.GetUniqueObject(ptr);
                 browse.ListenerToken = listenerToken;

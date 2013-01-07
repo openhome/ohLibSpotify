@@ -2,7 +2,7 @@
 
 namespace SpotifySharp
 {
-    public delegate void SearchComplete(Search @result);
+    public delegate void SearchComplete(Search @result, object @userdata);
     public sealed partial class Search : IDisposable
     {
         internal static readonly ManagedWrapperTable<Search> SearchTable = new ManagedWrapperTable<Search>(x=>new Search(x));
@@ -10,11 +10,15 @@ namespace SpotifySharp
 
         IntPtr ListenerToken { get; set; }
 
-        static void SearchComplete(IntPtr result, IntPtr userdata)
+        static void SearchComplete(IntPtr result, IntPtr nativeUserdata)
         {
             var browse = SearchTable.GetUniqueObject(result);
-            var callback = ListenerTable.GetObject(userdata);
-            callback(browse);
+            SearchComplete listener;
+            object managedUserdata;
+            if (ListenerTable.TryGetListener(nativeUserdata, out listener, out managedUserdata))
+            {
+                listener(browse, managedUserdata);
+            }
         }
 
         static readonly search_complete_cb SearchCompleteDelegate = SearchComplete;
@@ -31,11 +35,12 @@ namespace SpotifySharp
             int playlistOffset,
             int playlistCount,
             SearchType searchType,
-            SearchComplete callback)
+            SearchComplete callback,
+            object userdata)
         {
             using (var utf8_query = SpotifyMarshalling.StringToUtf8(query))
             {
-                IntPtr listenerToken = ListenerTable.PutUniqueObject(callback);
+                IntPtr listenerToken = ListenerTable.PutUniqueObject(callback, userdata);
                 IntPtr ptr = NativeMethods.sp_search_create(
                     session._handle,
                     utf8_query.IntPtr,
