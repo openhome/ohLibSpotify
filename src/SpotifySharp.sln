@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManagedApiBuilder", "Manage
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifySharp", "SpotifySharp\SpotifySharp.csproj", "{39F7268A-8C23-4434-95AA-2DE39A8AEE36}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpShellSharp", "SpShellSharp\SpShellSharp.csproj", "{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,16 @@ Global
 		{39F7268A-8C23-4434-95AA-2DE39A8AEE36}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{39F7268A-8C23-4434-95AA-2DE39A8AEE36}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{39F7268A-8C23-4434-95AA-2DE39A8AEE36}.Release|x86.ActiveCfg = Release|Any CPU
+		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Debug|x86.ActiveCfg = Debug|x86
+		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Debug|x86.Build.0 = Debug|x86
+		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Release|Any CPU.ActiveCfg = Release|x86
+		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Release|Mixed Platforms.Build.0 = Release|x86
+		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Release|x86.ActiveCfg = Release|x86
+		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

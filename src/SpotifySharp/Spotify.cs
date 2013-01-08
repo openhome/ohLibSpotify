@@ -11,5 +11,14 @@ namespace SpotifySharp
         {
             return SpotifyMarshalling.Utf8ToString(NativeMethods.sp_build_id());
         }
+        public static string ErrorMessage(SpotifyError error)
+        {
+            return SpotifyMarshalling.Utf8ToString(NativeMethods.sp_error_message(error));
+        }
+        public static string CountryString(int country)
+        {
+            return "" + (char)(country >> 8) + (char)(country & 0xff);
+        }
+        internal const string NativeLibrary = "libspotify";
     }
 }

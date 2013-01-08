@@ -2,18 +2,20 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{39F7268A-8C23-4434-95AA-2DE39A8AEE36}</ProjectGuid>
+    <ProjectGuid>{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SpotifySharp</RootNamespace>
-    <AssemblyName>SpotifySharp</AssemblyName>
+    <RootNamespace>SpShellSharp</RootNamespace>
+    <AssemblyName>SpShellSharp</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -21,18 +23,15 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -44,28 +43,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Album.cs" />
-    <Compile Include="AlbumBrowse.cs" />
-    <Compile Include="Artist.cs" />
-    <Compile Include="ArtistBrowse.cs" />
-    <Compile Include="ManagedWrapperTable.cs" />
-    <Compile Include="GeneratedCode.cs" />
-    <Compile Include="Image.cs" />
-    <Compile Include="Inbox.cs" />
-    <Compile Include="ManagedListenerTable.cs" />
-    <Compile Include="Playlist.cs" />
-    <Compile Include="PlaylistContainer.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RiffWriter.cs" />
-    <Compile Include="Search.cs" />
-    <Compile Include="Spotify.cs" />
-    <Compile Include="SpotifyException.cs" />
-    <Compile Include="SpotifyMarshalling.cs" />
-    <Compile Include="SpotifySession.cs" />
-    <Compile Include="TestProgram.cs" />
-    <Compile Include="TopListBrowse.cs" />
-    <Compile Include="UserDataTable.cs" />
-    <Compile Include="Utf8String.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SpotifySharp\SpotifySharp.csproj">
+      <Project>{39F7268A-8C23-4434-95AA-2DE39A8AEE36}</Project>
+      <Name>SpotifySharp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
