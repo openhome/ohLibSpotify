@@ -666,7 +666,7 @@ namespace ManagedApiBuilder
             aAssembler.InsertAtTop("IntPtr returnValue;");
             aAssembler.SetPInvokeReturn(new CSharpType("IntPtr"), "returnValue");
             aAssembler.SetManagedReturn(new CSharpType(className));
-            aAssembler.InsertAtEnd("return new "+className+"(returnValue);");
+            aAssembler.InsertAtEnd("return (returnValue==IntPtr.Zero ? null : new "+className+"(returnValue));");
             aNativeFunction.ConsumeReturn();
             return true;
         }
