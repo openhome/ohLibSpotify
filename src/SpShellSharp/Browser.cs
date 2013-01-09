@@ -186,34 +186,9 @@ namespace SpShellSharp
 
         void PrintTrack(Track aTrack)
         {
-            int duration = aTrack.Duration();
-            Console.Write(" {0} ", Track.IsStarred(iSession, aTrack) ? "*" : " ");
-            Console.Write("Track {0} [{1}:{2:D02}] has {3} artist(s), {4}% popularity",
-                aTrack.Name(),
-                duration / 60000,
-                (duration / 1000) % 60,
-                aTrack.NumArtists(),
-                aTrack.Popularity());
-            if (aTrack.Disc() != 0)
-            {
-                Console.Write(", {0} on disc {1}",
-                    aTrack.Index(),
-                    aTrack.Disc());
-            }
-            for (int i = 0; i < aTrack.NumArtists(); ++i)
-            {
-                var artist = aTrack.Artist(i);
-                Console.Write("\tArtist {0}: {1}", i + 1, artist.Name());
-            }
-            var link = Link.CreateFromTrack(aTrack, 0);
-            Console.WriteLine("\t\t{0}", link.AsString());
-            link.Release();
+            Printing.PrintTrack(iSession, aTrack);
         }
 
-        string Truncate(string s, int length)
-        {
-            return s.Length <= length ? s : (s.Substring(0, length) + "...");
-        }
 
         void BrowseAlbumCallback(AlbumBrowse aResult, object aUserdata)
         {
@@ -230,22 +205,11 @@ namespace SpShellSharp
             iConsoleReader.RequestInput("> ");
         }
 
-        void PrintAlbumBrowse(AlbumBrowse aResult)
+        void PrintAlbumBrowse(AlbumBrowse aAlbumBrowse)
         {
-            Console.WriteLine("Album browse of \"{0}\" ({1})", aResult.Album().Name(), aResult.Album().Year());
-            for (int i = 0; i != aResult.NumCopyrights(); ++i)
-            {
-                Console.WriteLine("  Copyright: {0}", aResult.Copyright(i));
-            }
-            Console.WriteLine("  Tracks: {0}", aResult.NumTracks());
-            Console.WriteLine("  Review: {0}", Truncate(aResult.Review(), 60));
-            Console.WriteLine();
-            for (int i = 0; i != aResult.NumTracks(); ++i)
-            {
-                PrintTrack(aResult.Track(i));
-            }
-            Console.WriteLine();
+            Printing.PrintAlbumBrowse(iSession, aAlbumBrowse);
         }
+
 
         void BrowseArtistCallback(ArtistBrowse aResult, object aUserdata)
         {
@@ -262,22 +226,9 @@ namespace SpShellSharp
             iConsoleReader.RequestInput("> ");
         }
 
-        void PrintArtistBrowse(ArtistBrowse aResult)
+        void PrintArtistBrowse(ArtistBrowse aArtistBrowse)
         {
-            Console.WriteLine("Artist browse of \"{0}\"", aResult.Artist().Name());
-            for (int i = 0; i != aResult.NumSimilarArtists(); ++i)
-            {
-                Console.WriteLine("  Similar artist: {0}", aResult.SimilarArtist(i).Name());
-            }
-            Console.WriteLine("  Portraits: {0}", aResult.NumPortraits());
-            Console.WriteLine("  Tracks: {0}", aResult.NumTracks());
-            Console.WriteLine("  Biography: {0}", Truncate(aResult.Biography(),60));
-            Console.WriteLine();
-            for (int i = 0; i != aResult.NumTracks(); ++i)
-            {
-                PrintTrack(aResult.Track(i));
-            }
-            Console.WriteLine();
+            Printing.PrintArtistBrowse(iSession, aArtistBrowse);
         }
     }
 }

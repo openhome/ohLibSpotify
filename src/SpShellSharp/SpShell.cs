@@ -26,6 +26,7 @@ namespace SpShellSharp
         ConsoleCommandDictionary iCommands;
         List<Action> iMetadataUpdateActions = new List<Action>();
         Browser iBrowser;
+        Searcher iSearcher;
         Action iMetadataUpdatedCallbacks;
 
         public SpShell(AutoResetEvent aSpotifyEvent, string aUsername, string aPassword, string aBlob, bool aSelftest, ConsoleReader aReader)
@@ -52,14 +53,17 @@ namespace SpShellSharp
             }
 
             iBrowser = new Browser(iSession, this, aReader);
+            iSearcher = new Searcher(iSession, aReader);
 
             iCommands = new ConsoleCommandDictionary(CmdDone)
                         {
-                            { "log",      CmdLog,              "Enable/Disable logging to console (default off)" },
-                            { "logout",   CmdLogout,           "Logout and exit app" },
-                            { "exit",     CmdLogout,           "Logout and exit app" },
-                            { "quit",     CmdLogout,           "Logout and exit app" },
-                            { "browse",   iBrowser.CmdBrowse,  "Browse a Spotify URL" },
+                            { "log",      CmdLog,                "Enable/Disable logging to console (default off)" },
+                            { "logout",   CmdLogout,             "Logout and exit app" },
+                            { "exit",     CmdLogout,             "Logout and exit app" },
+                            { "quit",     CmdLogout,             "Logout and exit app" },
+                            { "browse",   iBrowser.CmdBrowse,    "Browse a Spotify URL" },
+                            { "search",   iSearcher.CmdSearch,   "Search" },
+                            { "whatsnew", iSearcher.CmdWhatsNew, "List new albums" },
                         };
             iCommands.Add("help", iCommands.CmdHelp, "This help");
 
