@@ -27,6 +27,7 @@ namespace SpShellSharp
         List<Action> iMetadataUpdateActions = new List<Action>();
         Browser iBrowser;
         Searcher iSearcher;
+        TopLister iTopLister;
         Action iMetadataUpdatedCallbacks;
 
         public SpShell(AutoResetEvent aSpotifyEvent, string aUsername, string aPassword, string aBlob, bool aSelftest, ConsoleReader aReader)
@@ -54,6 +55,7 @@ namespace SpShellSharp
 
             iBrowser = new Browser(iSession, this, aReader);
             iSearcher = new Searcher(iSession, aReader);
+            iTopLister = new TopLister(iSession, aReader);
 
             iCommands = new ConsoleCommandDictionary(CmdDone)
                         {
@@ -64,6 +66,7 @@ namespace SpShellSharp
                             { "browse",   iBrowser.CmdBrowse,    "Browse a Spotify URL" },
                             { "search",   iSearcher.CmdSearch,   "Search" },
                             { "whatsnew", iSearcher.CmdWhatsNew, "List new albums" },
+                            { "toplist",  iTopLister.CmdTopList, "Browse toplists" },
                         };
             iCommands.Add("help", iCommands.CmdHelp, "This help");
 
