@@ -79,6 +79,7 @@ namespace SpShellSharp
                             { "unstar",   iStarManager.CmdUnstar,  "Unstar a track" },
                             { "starred",  iStarManager.CmdStarred, "List all starred tracks" },
                             { "playlists", iPlaylistManager.CmdPlaylists, "List playlists" },
+                            { "playlist",  iPlaylistManager.CmdPlaylist,  "List playlist contents" },
                         };
             iCommands.Add("help", iCommands.CmdHelp, "This help");
 

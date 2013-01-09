@@ -64,6 +64,70 @@ namespace SpShellSharp
             }
             return 1;
         }
+        public int CmdPlaylist(string[] aArgs)
+        {
+            var pc = iSession.Playlistcontainer();
+
+            if (aArgs.Length <= 1)
+            {
+                Console.WriteLine("playlist [playlist index]");
+                return -1;
+            }
+
+            int index;
+            if (!int.TryParse(aArgs[1], out index) || index<0 || index>=pc.NumPlaylists())
+            {
+                Console.WriteLine("Invalid index");
+                return -1;
+            }
+
+            var playlist = pc.Playlist(index);
+
+            int unseen = pc.GetUnseenTracks(playlist, null);
+
+            Console.WriteLine(
+                "Playlist {0} by {1}{2}{3}, {4} new tracks",
+                playlist.Name(),
+                playlist.Owner().DisplayName(),
+                playlist.IsCollaborative() ? " (collaborative)" : "",
+                playlist.HasPendingChanges() ? " with pending changes" : "",
+                unseen
+                );
+            if (aArgs.Length == 3)
+            {
+                if (aArgs[2] == "new")
+                {
+                    if (unseen < 0)
+                        return 1;
+                    Track[] tracks = new Track[unseen];
+                    pc.GetUnseenTracks(playlist, tracks);
+                    for (int i = 0; i != unseen; ++i)
+                    {
+                        PrintTrack2(tracks[i], i);
+                    }
+                    return 1;
+                }
+                else if (aArgs[2] == "clear-unseen")
+                {
+                    pc.ClearUnseenTracks(playlist);
+                }
+            }
+            for (int i = 0; i < playlist.NumTracks(); ++i)
+            {
+                Track track = playlist.Track(i);
+                PrintTrack2(track, i);
+            }
+            return 1;
+        }
+        public void PrintTrack2(Track aTrack, int aIndex)
+        {
+            Console.WriteLine("{0,3}. {1} {2}{3} {4}",
+                aIndex,
+                Track.IsStarred(iSession, aTrack) ? "*" : " ",
+                Track.IsLocal(iSession, aTrack) ? "local" : "     ",
+                Track.IsAutolinked(iSession, aTrack) ? "autolinked" : "          ",
+                aTrack.Name());
+        }
 
     }
 }
