@@ -31,6 +31,15 @@ namespace SpotifySharp
             return array;
         }
 
+        public void CopyTo<T2>(T2[] aTarget, Func<T, T2> aMapFunction)
+        {
+            T[] source = Value();
+            for (int i = 0; i != Length; ++i)
+            {
+                aTarget[i] = aMapFunction(source[i]);
+            }
+        }
+
         public void Dispose()
         {
             if (iPtr != IntPtr.Zero)

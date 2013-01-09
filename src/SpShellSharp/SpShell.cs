@@ -30,6 +30,7 @@ namespace SpShellSharp
         TopLister iTopLister;
         Messaging iMessaging;
         Action iMetadataUpdatedCallbacks;
+        StarManager iStarManager;
 
         public SpShell(AutoResetEvent aSpotifyEvent, string aUsername, string aPassword, string aBlob, bool aSelftest, ConsoleReader aReader)
         {
@@ -58,19 +59,23 @@ namespace SpShellSharp
             iSearcher = new Searcher(iSession, aReader);
             iTopLister = new TopLister(iSession, aReader);
             iMessaging = new Messaging(iSession, aReader, iBrowser);
+            iStarManager = new StarManager(iSession, aReader, iBrowser);
 
             iCommands = new ConsoleCommandDictionary(CmdDone)
                         {
-                            { "log",      CmdLog,                "Enable/Disable logging to console (default off)" },
-                            { "logout",   CmdLogout,             "Logout and exit app" },
-                            { "exit",     CmdLogout,             "Logout and exit app" },
-                            { "quit",     CmdLogout,             "Logout and exit app" },
-                            { "browse",   iBrowser.CmdBrowse,    "Browse a Spotify URL" },
-                            { "search",   iSearcher.CmdSearch,   "Search" },
-                            { "whatsnew", iSearcher.CmdWhatsNew, "List new albums" },
-                            { "toplist",  iTopLister.CmdTopList, "Browse toplists" },
-                            { "post",     iMessaging.CmdPost,    "Post track to a user's inbox" },
-                            { "inbox",    iMessaging.CmdInbox,   "View inbox" },
+                            { "log",      CmdLog,                  "Enable/Disable logging to console (default off)" },
+                            { "logout",   CmdLogout,               "Logout and exit app" },
+                            { "exit",     CmdLogout,               "Logout and exit app" },
+                            { "quit",     CmdLogout,               "Logout and exit app" },
+                            { "browse",   iBrowser.CmdBrowse,      "Browse a Spotify URL" },
+                            { "search",   iSearcher.CmdSearch,     "Search" },
+                            { "whatsnew", iSearcher.CmdWhatsNew,   "List new albums" },
+                            { "toplist",  iTopLister.CmdTopList,   "Browse toplists" },
+                            { "post",     iMessaging.CmdPost,      "Post track to a user's inbox" },
+                            { "inbox",    iMessaging.CmdInbox,     "View inbox" },
+                            { "star",     iStarManager.CmdStar,    "Star a track" },
+                            { "unstar",   iStarManager.CmdUnstar,  "Unstar a track" },
+                            { "starred",  iStarManager.CmdStarred, "List all starred tracks" },
                         };
             iCommands.Add("help", iCommands.CmdHelp, "This help");
 

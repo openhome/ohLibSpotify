@@ -402,7 +402,7 @@ namespace ManagedApiBuilder
             aAssembler.InsertBeforeCall("using (var array_" + paramName + " = SpotifyMarshalling.ArrayToNativeArray(" + paramName + ".Select(x=>x._handle).ToArray()))");
             aAssembler.InsertBeforeCall("{");
             aAssembler.IncreaseIndent();
-            aAssembler.InsertAfterCall(     "Array.Copy(array_"+paramName+".Value(), "+paramName+", "+paramName+".Length);");
+            aAssembler.InsertAfterCall(     "array_"+paramName+".CopyTo("+paramName+", ptr => ptr == IntPtr.Zero ? null : new "+className+"(ptr));");
             aAssembler.DecreaseIndent();
             aAssembler.InsertAfterCall( "}");
 

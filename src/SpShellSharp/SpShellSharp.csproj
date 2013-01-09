@@ -50,6 +50,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Searcher.cs" />
     <Compile Include="SpShell.cs" />
+    <Compile Include="StarManager.cs" />
     <Compile Include="TopLister.cs" />
   </ItemGroup>
   <ItemGroup>
