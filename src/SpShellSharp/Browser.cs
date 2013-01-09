@@ -210,14 +210,74 @@ namespace SpShellSharp
             link.Release();
         }
 
+        string Truncate(string s, int length)
+        {
+            return s.Length <= length ? s : (s.Substring(0, length) + "...");
+        }
+
         void BrowseAlbumCallback(AlbumBrowse aResult, object aUserdata)
         {
-            throw new NotImplementedException();
+            try
+            {
+                aResult.Error();
+                PrintAlbumBrowse(aResult);
+            }
+            catch (SpotifyException e)
+            {
+                Console.Error.WriteLine("Failed to browse album: {0}", e.Message);
+            }
+            aResult.Dispose();
+            iConsoleReader.RequestInput("> ");
+        }
+
+        void PrintAlbumBrowse(AlbumBrowse aResult)
+        {
+            Console.WriteLine("Album browse of \"{0}\" ({1})", aResult.Album().Name(), aResult.Album().Year());
+            for (int i = 0; i != aResult.NumCopyrights(); ++i)
+            {
+                Console.WriteLine("  Copyright: {0}", aResult.Copyright(i));
+            }
+            Console.WriteLine("  Tracks: {0}", aResult.NumTracks());
+            Console.WriteLine("  Review: {0}", Truncate(aResult.Review(), 60));
+            Console.WriteLine();
+            for (int i = 0; i != aResult.NumTracks(); ++i)
+            {
+                PrintTrack(aResult.Track(i));
+            }
+            Console.WriteLine();
         }
 
         void BrowseArtistCallback(ArtistBrowse aResult, object aUserdata)
         {
-            throw new NotImplementedException();
+            try
+            {
+                aResult.Error();
+                PrintArtistBrowse(aResult);
+            }
+            catch (SpotifyException e)
+            {
+                Console.Error.WriteLine("Failed to browse artist: {0}", e.Message);
+            }
+            aResult.Dispose();
+            iConsoleReader.RequestInput("> ");
+        }
+
+        void PrintArtistBrowse(ArtistBrowse aResult)
+        {
+            Console.WriteLine("Artist browse of \"{0}\"", aResult.Artist().Name());
+            for (int i = 0; i != aResult.NumSimilarArtists(); ++i)
+            {
+                Console.WriteLine("  Similar artist: {0}", aResult.SimilarArtist(i).Name());
+            }
+            Console.WriteLine("  Portraits: {0}", aResult.NumPortraits());
+            Console.WriteLine("  Tracks: {0}", aResult.NumTracks());
+            Console.WriteLine("  Biography: {0}", Truncate(aResult.Biography(),60));
+            Console.WriteLine();
+            for (int i = 0; i != aResult.NumTracks(); ++i)
+            {
+                PrintTrack(aResult.Track(i));
+            }
+            Console.WriteLine();
         }
     }
 }
