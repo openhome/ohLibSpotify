@@ -28,6 +28,7 @@ namespace SpShellSharp
         Browser iBrowser;
         Searcher iSearcher;
         TopLister iTopLister;
+        Messaging iMessaging;
         Action iMetadataUpdatedCallbacks;
 
         public SpShell(AutoResetEvent aSpotifyEvent, string aUsername, string aPassword, string aBlob, bool aSelftest, ConsoleReader aReader)
@@ -56,6 +57,7 @@ namespace SpShellSharp
             iBrowser = new Browser(iSession, this, aReader);
             iSearcher = new Searcher(iSession, aReader);
             iTopLister = new TopLister(iSession, aReader);
+            iMessaging = new Messaging(iSession, aReader, iBrowser);
 
             iCommands = new ConsoleCommandDictionary(CmdDone)
                         {
@@ -67,6 +69,8 @@ namespace SpShellSharp
                             { "search",   iSearcher.CmdSearch,   "Search" },
                             { "whatsnew", iSearcher.CmdWhatsNew, "List new albums" },
                             { "toplist",  iTopLister.CmdTopList, "Browse toplists" },
+                            { "post",     iMessaging.CmdPost,    "Post track to a user's inbox" },
+                            { "inbox",    iMessaging.CmdInbox,   "View inbox" },
                         };
             iCommands.Add("help", iCommands.CmdHelp, "This help");
 

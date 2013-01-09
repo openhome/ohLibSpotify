@@ -38,7 +38,6 @@ namespace SpotifySharp
                                 ManagedUserdata = userdata,
                                 Listener = listener
                             };
-                Console.WriteLine("Added {0}/{1}/{2}", owner, Fmt(listener), Fmt(userdata));
 
                 _managedTable[managedKey] = entry;
                 _nativeTable[token] = entry;
@@ -52,7 +51,6 @@ namespace SpotifySharp
             {
                 var managedKey = Tuple.Create(owner, listener, userdata);
                 Entry entry;
-                Console.WriteLine("Removing {0}/{1}/{2}", owner, Fmt(listener) , Fmt(userdata));
                 if (!_managedTable.TryGetValue(managedKey, out entry))
                 {
                     throw new KeyNotFoundException("RemoveListener: Key not found");

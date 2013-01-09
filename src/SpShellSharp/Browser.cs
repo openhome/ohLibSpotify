@@ -111,23 +111,19 @@ namespace SpShellSharp
             }
         }
 
-        void BrowsePlaylist(Playlist aPlaylist)
+        public void BrowsePlaylist(Playlist aPlaylist)
         {
-            Console.WriteLine(">BrowsePlaylist");
             iPlaylistBrowse = aPlaylist;
             aPlaylist.AddCallbacks(iPlaylistListener, null);
             PlaylistBrowseTry();
-            Console.WriteLine("<BrowsePlaylist");
         }
 
         void PlaylistBrowseTry()
         {
-            Console.WriteLine(">PlaylistBrowseTry");
             StartingListeningForPlaylistChanges();
             if (!iPlaylistBrowse.IsLoaded())
             {
                 Console.WriteLine("\tPlaylist not loaded");
-                Console.WriteLine("<PlaylistBrowseTry");
                 return;
             }
 
@@ -137,7 +133,6 @@ namespace SpShellSharp
                 Track t = iPlaylistBrowse.Track(i);
                 if (!t.IsLoaded())
                 {
-                    Console.WriteLine("<PlaylistBrowseTry");
                     return;
                 }
             }
@@ -156,7 +151,6 @@ namespace SpShellSharp
             iPlaylistBrowse.Release();
             iPlaylistBrowse = null;
             iConsoleReader.RequestInput("> ");
-            Console.WriteLine("<PlaylistBrowseTry");
         }
 
 

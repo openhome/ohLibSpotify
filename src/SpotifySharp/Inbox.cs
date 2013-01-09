@@ -24,7 +24,7 @@ namespace SpotifySharp
 
         static readonly inboxpost_complete_cb InboxPostCompleteDelegate = InboxPostComplete;
 
-        public static Inbox Create(
+        public static Inbox PostTracks(
             SpotifySession session,
             string username,
             Track[] tracks,
