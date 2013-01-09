@@ -15,16 +15,16 @@ namespace SpotifySharp
             Console.WriteLine("sp_playlistcontainer_add_callbacks({0}, {1}, {2})", this._handle, callbacks, nativeUserdata);
             NativeMethods.sp_playlistcontainer_add_callbacks(this._handle, callbacks, nativeUserdata);
         }
-        public void RemoveCallbacks(object userdata)
+        public void RemoveCallbacks(PlaylistContainerListener listener, object userdata)
         {
             IntPtr nativeUserdata;
-            if (!ListenerTable.TryGetNativeUserdata(this._handle, userdata, out nativeUserdata))
+            if (!ListenerTable.TryGetNativeUserdata(this._handle, listener, userdata, out nativeUserdata))
             {
                 throw new ArgumentException("Playlist.RemoveCallbacks: No callback registered for userdata");
             }
             var callbacks = PlaylistContainerDelegates.CallbacksPtr;
             NativeMethods.sp_playlistcontainer_remove_callbacks(this._handle, callbacks, nativeUserdata);
-            ListenerTable.RemoveListener(this._handle, nativeUserdata);
+            ListenerTable.RemoveListener(this._handle, listener, userdata);
         }
     }
 

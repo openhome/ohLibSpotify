@@ -509,7 +509,7 @@ namespace SpotifySharp
             public override void LoggedOut(SpotifySession session)
             {
                 Console.WriteLine("logged_out(session)");
-                session.Playlistcontainer().RemoveCallbacks(iContainerListener);
+                session.Playlistcontainer().RemoveCallbacks(iContainerListener, iContainerListener);
             }
             void DumpPlaylist(SpotifySession session, Playlist playlist)
             {

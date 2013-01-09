@@ -13,15 +13,15 @@ namespace SpotifySharp
             IntPtr nativeUserdata = ListenerTable.PutListener(this._handle, listener, userdata);
             NativeMethods.sp_image_add_load_callback(this._handle, ImageDelegates.Callback, nativeUserdata);
         }
-        public void RemoveLoadCallback(object userdata)
+        public void RemoveLoadCallback(ImageLoaded listener, object userdata)
         {
             IntPtr nativeUserdata;
-            if (!ListenerTable.TryGetNativeUserdata(this._handle, userdata, out nativeUserdata))
+            if (!ListenerTable.TryGetNativeUserdata(this._handle, listener, userdata, out nativeUserdata))
             {
                 throw new ArgumentException("Image.RemoveCallbacks: No callback registered for userdata");
             }
             NativeMethods.sp_image_remove_load_callback(this._handle, ImageDelegates.Callback, nativeUserdata);
-            ListenerTable.RemoveListener(this._handle, nativeUserdata);
+            ListenerTable.RemoveListener(this._handle, listener, userdata);
         }
         public string[] Subscribers()
         {

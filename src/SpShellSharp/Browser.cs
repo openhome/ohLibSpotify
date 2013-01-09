@@ -12,11 +12,46 @@ namespace SpShellSharp
         IMetadataWaiter iMetadataWaiter;
         IConsoleReader iConsoleReader;
         Track iTrackBrowse;
+        Playlist iPlaylistBrowse;
+        BrowsingPlaylistListener iPlaylistListener;
+        bool iListeningForPlaylist;
+
+        class BrowsingPlaylistListener : PlaylistListener
+        {
+            Browser iBrowser;
+
+            public BrowsingPlaylistListener(Browser aBrowser)
+            {
+                iBrowser = aBrowser;
+            }
+
+            public override void TracksAdded(Playlist pl, Track[] tracks, int position, object userdata)
+            {
+                Console.WriteLine("\t{0} tracks added", tracks.Length);
+            }
+            public override void TracksRemoved(Playlist pl, int[] tracks, object userdata)
+            {
+                Console.WriteLine("\t{0} tracks removed", tracks.Length);
+            }
+            public override void TracksMoved(Playlist pl, int[] tracks, int new_position, object userdata)
+            {
+                Console.WriteLine("\t{0} tracks moved", tracks.Length);
+            }
+            public override void PlaylistRenamed(Playlist pl, object userdata)
+            {
+                Console.WriteLine("List name: {0}", pl.Name());
+            }
+            public override void PlaylistStateChanged(Playlist pl, object userdata)
+            {
+                iBrowser.PlaylistBrowseTry();
+            }
+        }
         public Browser(SpotifySession aSession, IMetadataWaiter aMetadataWaiter, IConsoleReader aConsoleReader)
         {
             iSession = aSession;
             iMetadataWaiter = aMetadataWaiter;
             iConsoleReader = aConsoleReader;
+            iPlaylistListener = new BrowsingPlaylistListener(this);
         }
         public int CmdBrowse(string[] args)
         {
@@ -46,7 +81,7 @@ namespace SpShellSharp
                 case LinkType.Localtrack:
                 case LinkType.Track:
                     iTrackBrowse = link.AsTrack();
-                    //iMetadataWaiter.WaitForMetadataUpdate(TrackBrowseTry);
+                    iMetadataWaiter.AddMetadataUpdatedCallback(TrackBrowseTry);
                     iTrackBrowse.AddRef();
                     TrackBrowseTry();
                     break;
@@ -58,10 +93,72 @@ namespace SpShellSharp
             return 0;
         }
 
-        void BrowsePlaylist(Playlist aCreate)
+        void StartingListeningForPlaylistChanges()
         {
-            throw new NotImplementedException();
+            if (!iListeningForPlaylist)
+            {
+                iMetadataWaiter.AddMetadataUpdatedCallback(PlaylistBrowseTry);
+                iListeningForPlaylist = true;
+            }
         }
+
+        void StopListeningForPlaylistChanges()
+        {
+            if (iListeningForPlaylist)
+            {
+                iMetadataWaiter.RemoveMetadataUpdatedCallback(PlaylistBrowseTry);
+                iListeningForPlaylist = false;
+            }
+        }
+
+        void BrowsePlaylist(Playlist aPlaylist)
+        {
+            Console.WriteLine(">BrowsePlaylist");
+            iPlaylistBrowse = aPlaylist;
+            aPlaylist.AddCallbacks(iPlaylistListener, null);
+            PlaylistBrowseTry();
+            Console.WriteLine("<BrowsePlaylist");
+        }
+
+        void PlaylistBrowseTry()
+        {
+            Console.WriteLine(">PlaylistBrowseTry");
+            StartingListeningForPlaylistChanges();
+            if (!iPlaylistBrowse.IsLoaded())
+            {
+                Console.WriteLine("\tPlaylist not loaded");
+                Console.WriteLine("<PlaylistBrowseTry");
+                return;
+            }
+
+            int tracks = iPlaylistBrowse.NumTracks();
+            for (int i = 0; i != tracks; ++i)
+            {
+                Track t = iPlaylistBrowse.Track(i);
+                if (!t.IsLoaded())
+                {
+                    Console.WriteLine("<PlaylistBrowseTry");
+                    return;
+                }
+            }
+
+            Console.WriteLine("\tPlaylist and metadata loaded");
+
+            for (int i = 0; i != tracks; ++i)
+            {
+                Track t = iPlaylistBrowse.Track(i);
+                Console.Write(" {0,5}: ", i + 1);
+                PrintTrack(t);
+            }
+
+            iPlaylistBrowse.RemoveCallbacks(iPlaylistListener, null);
+            StopListeningForPlaylistChanges();
+            iPlaylistBrowse.Release();
+            iPlaylistBrowse = null;
+            iConsoleReader.RequestInput("> ");
+            Console.WriteLine("<PlaylistBrowseTry");
+        }
+
 
         void TrackBrowseTry()
         {
@@ -75,13 +172,13 @@ namespace SpShellSharp
                 switch (e.Error)
                 {
                     case SpotifyError.IsLoading:
-                        iMetadataWaiter.WaitForMetadataUpdate(TrackBrowseTry);
                         return;
                     default:
                         Console.WriteLine("Unable to resolve track: {0}", e.Message);
                         break;
                 }
             }
+            iMetadataWaiter.RemoveMetadataUpdatedCallback(TrackBrowseTry);
             iConsoleReader.RequestInput("> ");
             iTrackBrowse.Release();
             iTrackBrowse = null;
@@ -91,7 +188,7 @@ namespace SpShellSharp
         {
             int duration = aTrack.Duration();
             Console.Write(" {0} ", Track.IsStarred(iSession, aTrack) ? "*" : " ");
-            Console.Write("Track {0} [{1}:{2:02d}] has {3} artist(s), {4}% popularity",
+            Console.Write("Track {0} [{1}:{2:D02}] has {3} artist(s), {4}% popularity",
                 aTrack.Name(),
                 duration / 60000,
                 (duration / 1000) % 60,

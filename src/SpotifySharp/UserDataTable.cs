@@ -17,16 +17,17 @@ namespace SpotifySharp
             public object ManagedUserdata;
             public T Listener;
         }
-        readonly Dictionary<Tuple<IntPtr, object>, Entry> _managedTable = new Dictionary<Tuple<IntPtr, object>, Entry>();
+        readonly Dictionary<Tuple<IntPtr, T, object>, Entry> _managedTable = new Dictionary<Tuple<IntPtr, T, object>, Entry>();
         readonly Dictionary<IntPtr, Entry> _nativeTable = new Dictionary<IntPtr, Entry>();
         int _counter = 100; // Starting point is arbitrary, but should help distinguish real tokens from mistakes when debugging.
+        string Fmt(object o) { return o == null ? "null" : String.Format("#{0}", o.GetHashCode()); }
         public IntPtr PutListener(IntPtr owner, T listener, object userdata)
         {
             lock (_monitor)
             {
                 _counter += 1;
                 var token = (IntPtr) _counter;
-                var managedKey = Tuple.Create(owner, userdata);
+                var managedKey = Tuple.Create(owner, listener, userdata);
                 if (_managedTable.ContainsKey(managedKey))
                 {
                     throw new ArgumentException("This userdata is already registered.", "userdata");
@@ -37,6 +38,7 @@ namespace SpotifySharp
                                 ManagedUserdata = userdata,
                                 Listener = listener
                             };
+                Console.WriteLine("Added {0}/{1}/{2}", owner, Fmt(listener), Fmt(userdata));
 
                 _managedTable[managedKey] = entry;
                 _nativeTable[token] = entry;
@@ -44,12 +46,13 @@ namespace SpotifySharp
                 return token;
             }
         }
-        public void RemoveListener(IntPtr owner, object userdata)
+        public void RemoveListener(IntPtr owner, T listener, object userdata)
         {
             lock (_monitor)
             {
-                var managedKey = Tuple.Create(owner, userdata);
+                var managedKey = Tuple.Create(owner, listener, userdata);
                 Entry entry;
+                Console.WriteLine("Removing {0}/{1}/{2}", owner, Fmt(listener) , Fmt(userdata));
                 if (!_managedTable.TryGetValue(managedKey, out entry))
                 {
                     throw new KeyNotFoundException("RemoveListener: Key not found");
@@ -58,11 +61,11 @@ namespace SpotifySharp
                 _nativeTable.Remove(entry.NativeUserdata);
             }
         }
-        public bool TryGetNativeUserdata(IntPtr owner, object managedUserdata, out IntPtr nativeUserdata)
+        public bool TryGetNativeUserdata(IntPtr owner, T listener, object managedUserdata, out IntPtr nativeUserdata)
         {
             lock (_monitor)
             {
-                var managedKey = Tuple.Create(owner, managedUserdata);
+                var managedKey = Tuple.Create(owner, listener, managedUserdata);
                 Entry entry;
                 if (!_managedTable.TryGetValue(managedKey, out entry))
                 {

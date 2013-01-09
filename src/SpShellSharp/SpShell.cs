@@ -8,7 +8,8 @@ namespace SpShellSharp
 {
     interface IMetadataWaiter
     {
-        void WaitForMetadataUpdate(Action aAction);
+        void AddMetadataUpdatedCallback(Action aCallback);
+        void RemoveMetadataUpdatedCallback(Action aCallback);
     }
 
     interface IConsoleReader
@@ -25,6 +26,7 @@ namespace SpShellSharp
         ConsoleCommandDictionary iCommands;
         List<Action> iMetadataUpdateActions = new List<Action>();
         Browser iBrowser;
+        Action iMetadataUpdatedCallbacks;
 
         public SpShell(AutoResetEvent aSpotifyEvent, string aUsername, string aPassword, string aBlob, bool aSelftest, ConsoleReader aReader)
         {
@@ -179,15 +181,11 @@ namespace SpShellSharp
         }
         public override void MetadataUpdated(SpotifySession session)
         {
-            List<Action> actions = iMetadataUpdateActions;
-            iMetadataUpdateActions = new List<Action>();
-            foreach (Action action in actions)
+            Action callbacks = iMetadataUpdatedCallbacks;
+            if (callbacks != null)
             {
-                action();
+                callbacks();
             }
-            // Note: Some of the actions might enqueue further actions -
-            // these should not be invoked now, but on the *next* metadata
-            // update.
         }
         public int CmdLog(string[] args)
         {
@@ -215,9 +213,14 @@ namespace SpShellSharp
         }
 
 
-        public void WaitForMetadataUpdate(Action aAction)
+        public void AddMetadataUpdatedCallback(Action aAction)
         {
-            iMetadataUpdateActions.Add(aAction);
+            iMetadataUpdatedCallbacks += aAction;
+        }
+
+        public void RemoveMetadataUpdatedCallback(Action aAction)
+        {
+            iMetadataUpdatedCallbacks -= aAction;
         }
     }
 }
