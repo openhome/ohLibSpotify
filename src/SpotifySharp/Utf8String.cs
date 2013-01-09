@@ -17,6 +17,9 @@ namespace SpotifySharp
         //protected abstract void Copy(T[] aSource, IntPtr aTarget, int aLength);
         protected abstract void Copy(IntPtr aSource, T[] aTarget, int aLength);
 
+        public NativeArray()
+        {
+        }
         public NativeArray(int aLength)
         {
             int elementSize = Marshal.SizeOf(typeof(T));
@@ -26,6 +29,8 @@ namespace SpotifySharp
         }
         public T[] Value()
         {
+            if (iPtr == IntPtr.Zero)
+                throw new InvalidOperationException("Cannot take Value() of unallocated NativeArray");
             T[] array = new T[iArrayLength];
             Copy(iPtr, array, iArrayLength);
             return array;
@@ -33,6 +38,11 @@ namespace SpotifySharp
 
         public void CopyTo<T2>(T2[] aTarget, Func<T, T2> aMapFunction)
         {
+            if (iPtr == IntPtr.Zero && aTarget == null) return; // No-op if both are null.
+            if (iPtr == IntPtr.Zero)
+                throw new InvalidOperationException("Cannot use CopyTo with unallocated NativeArray");
+            if (aTarget == null)
+                throw new InvalidOperationException("Cannot use CopyTo with null target array");
             T[] source = Value();
             for (int i = 0; i != Length; ++i)
             {
@@ -52,6 +62,7 @@ namespace SpotifySharp
 
     internal class NativeHandleArray : NativeArray<IntPtr>
     {
+        public NativeHandleArray() { }
         public NativeHandleArray(int aLength) : base(aLength) { }
 
         protected override void Copy(IntPtr aSource, IntPtr[] aTarget, int aLength)
@@ -62,6 +73,7 @@ namespace SpotifySharp
 
     internal class NativeByteArray : NativeArray<byte>
     {
+        public NativeByteArray() { }
         public NativeByteArray(int aLength) : base(aLength) { }
 
         protected override void Copy(IntPtr aSource, byte[] aTarget, int aLength)
@@ -72,6 +84,7 @@ namespace SpotifySharp
 
     internal class NativeIntArray : NativeArray<int>
     {
+        public NativeIntArray() { }
         public NativeIntArray(int aLength) : base(aLength) { }
 
         protected override void Copy(IntPtr aSource, int[] aTarget, int aLength)

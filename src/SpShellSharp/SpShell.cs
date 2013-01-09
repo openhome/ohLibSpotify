@@ -31,6 +31,7 @@ namespace SpShellSharp
         Messaging iMessaging;
         Action iMetadataUpdatedCallbacks;
         StarManager iStarManager;
+        PlaylistManager iPlaylistManager;
 
         public SpShell(AutoResetEvent aSpotifyEvent, string aUsername, string aPassword, string aBlob, bool aSelftest, ConsoleReader aReader)
         {
@@ -60,6 +61,7 @@ namespace SpShellSharp
             iTopLister = new TopLister(iSession, aReader);
             iMessaging = new Messaging(iSession, aReader, iBrowser);
             iStarManager = new StarManager(iSession, aReader, iBrowser);
+            iPlaylistManager = new PlaylistManager(iSession, aReader, iBrowser);
 
             iCommands = new ConsoleCommandDictionary(CmdDone)
                         {
@@ -76,6 +78,7 @@ namespace SpShellSharp
                             { "star",     iStarManager.CmdStar,    "Star a track" },
                             { "unstar",   iStarManager.CmdUnstar,  "Unstar a track" },
                             { "starred",  iStarManager.CmdStarred, "List all starred tracks" },
+                            { "playlists", iPlaylistManager.CmdPlaylists, "List playlists" },
                         };
             iCommands.Add("help", iCommands.CmdHelp, "This help");
 

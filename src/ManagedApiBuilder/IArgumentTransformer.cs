@@ -399,7 +399,7 @@ namespace ManagedApiBuilder
                 paramName,
                 new CSharpType(className + "[]"));
 
-            aAssembler.InsertBeforeCall("using (var array_" + paramName + " = SpotifyMarshalling.ArrayToNativeArray(" + paramName + ".Select(x=>x._handle).ToArray()))");
+            aAssembler.InsertBeforeCall("using (var array_" + paramName + " = SpotifyMarshalling.ArrayToNativeArray(" + paramName + ", x=>x._handle))");
             aAssembler.InsertBeforeCall("{");
             aAssembler.IncreaseIndent();
             aAssembler.InsertAfterCall(     "array_"+paramName+".CopyTo("+paramName+", ptr => ptr == IntPtr.Zero ? null : new "+className+"(ptr));");

@@ -84,6 +84,15 @@ namespace SpotifySharp
             return Encoding.UTF8.GetString(array);
         }
 
+        public static NativeHandleArray ArrayToNativeArray<T>(IEnumerable<T> aObjects, Func<T,IntPtr> aMapFunction)
+        {
+            if (aObjects == null)
+            {
+                return new NativeHandleArray();
+            }
+            return ArrayToNativeArray(aObjects.Select(aMapFunction).ToArray());
+        }
+
         public static NativeHandleArray ArrayToNativeArray(IntPtr[] aHandles)
         {
             var nativeArray = new NativeHandleArray(aHandles.Length);

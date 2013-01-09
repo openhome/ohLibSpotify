@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="Browser.cs" />
     <Compile Include="Messaging.cs" />
+    <Compile Include="PlaylistManager.cs" />
     <Compile Include="Printing.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
