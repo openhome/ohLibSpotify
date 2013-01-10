@@ -80,6 +80,9 @@ namespace SpShellSharp
                             { "starred",  iStarManager.CmdStarred, "List all starred tracks" },
                             { "playlists", iPlaylistManager.CmdPlaylists, "List playlists" },
                             { "playlist",  iPlaylistManager.CmdPlaylist,  "List playlist contents" },
+                            { "set_autolink", iPlaylistManager.CmdSetAutolink,  "Set autolinking state" },
+                            { "add_folder", iPlaylistManager.CmdAddFolder,  "Add playlist folder" },
+                            { "add", iPlaylistManager.CmdAddTrack,  "Add track to playlist" },
                         };
             iCommands.Add("help", iCommands.CmdHelp, "This help");
 
