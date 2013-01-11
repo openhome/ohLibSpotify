@@ -78,11 +78,13 @@ namespace SpShellSharp
                             { "star",     iStarManager.CmdStar,    "Star a track" },
                             { "unstar",   iStarManager.CmdUnstar,  "Unstar a track" },
                             { "starred",  iStarManager.CmdStarred, "List all starred tracks" },
-                            { "playlists", iPlaylistManager.CmdPlaylists, "List playlists" },
-                            { "playlist",  iPlaylistManager.CmdPlaylist,  "List playlist contents" },
-                            { "set_autolink", iPlaylistManager.CmdSetAutolink,  "Set autolinking state" },
-                            { "add_folder", iPlaylistManager.CmdAddFolder,  "Add playlist folder" },
-                            { "add", iPlaylistManager.CmdAddTrack,  "Add track to playlist" },
+                            { "playlists",            iPlaylistManager.CmdPlaylists,           "List playlists" },
+                            { "playlist",             iPlaylistManager.CmdPlaylist,            "List playlist contents" },
+                            { "set_autolink",         iPlaylistManager.CmdSetAutolink,         "Set autolinking state" },
+                            { "add_folder",           iPlaylistManager.CmdAddFolder,           "Add playlist folder" },
+                            { "update_subscriptions", iPlaylistManager.CmdUpdateSubscriptions, "Update playlist subscription info" },
+                            { "add",                  iPlaylistManager.CmdAddTrack,            "Add track to playlist" },
+                            { "offline",              iPlaylistManager.CmdPlaylistOffline,     "Set offline mode for a playlist" },
                         };
             iCommands.Add("help", iCommands.CmdHelp, "This help");
 

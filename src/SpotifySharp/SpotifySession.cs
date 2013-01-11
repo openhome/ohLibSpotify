@@ -10,6 +10,49 @@ namespace SpotifySharp
     //     for argument names. These may appear in client code using
     //     named arguments.
 
+    public struct OfflineSyncStatus
+    {
+        public int @queued_tracks;
+        public ulong @queued_bytes;
+        public int @done_tracks;
+        public ulong @done_bytes;
+        public int @copied_tracks;
+        public ulong @copied_bytes;
+        public int @willnotcopy_tracks;
+        public int @error_tracks;
+        [MarshalAs(UnmanagedType.I1)]
+        public bool @syncing;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack=4)]
+    struct OfflineSyncStatus_Pack4
+    {
+        public int @queued_tracks;
+        public ulong @queued_bytes;
+        public int @done_tracks;
+        public ulong @done_bytes;
+        public int @copied_tracks;
+        public ulong @copied_bytes;
+        public int @willnotcopy_tracks;
+        public int @error_tracks;
+        [MarshalAs(UnmanagedType.I1)]
+        public bool @syncing;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct OfflineSyncStatus_PackDefault
+    {
+        public int @queued_tracks;
+        public ulong @queued_bytes;
+        public int @done_tracks;
+        public ulong @done_bytes;
+        public int @copied_tracks;
+        public ulong @copied_bytes;
+        public int @willnotcopy_tracks;
+        public int @error_tracks;
+        [MarshalAs(UnmanagedType.I1)]
+        public bool @syncing;
+    }
 
     /// <summary>
     /// The Spotify Session.
@@ -143,15 +186,105 @@ namespace SpotifySharp
         {
             return NativeMethods.sp_offline_num_playlists(_handle);
         }
+
+        // **** OfflineSyncGetStatus ****
+        // This is pretty horrible. libspotify uses non-standard packing on
+        // Windows which sadly isn't documented. On Windows, structs are
+        // normally padded so that each member is aligned to its own size.
+        // This includes even an 8-byte __int64 in a 32-bit process.
+        // Spotify however is built with /Zp4, resulting in corruption.
+        // 
+        // Thankfully, only one struct is actually affected by this,
+        // sp_offline_sync_status, since it is the only struct that contains
+        // 8-byte fields even on a 32-bit architecture. Our workaround is to
+        // declare two versions of the struct, one with 4-byte packing, the
+        // other with compiler-default packing. On 32-bit Windows, we use
+        // the first, on other platforms we use the second. This messes up
+        // our nice automatically generated implementation of
+        // OfflineSyncGetStatus, so instead we have to write two manual
+        // implementations and pick one at run-time.
+        //
+        // If in the future libspotify adds more functions that deal with
+        // structs with >4-byte members we might need to think about this
+        // approach. It might be cleaner to have separate Windows and
+        // non-Windows versions of the assembly.
+
+        static bool OfflineSyncGetStatus_Pack4(IntPtr handle, ref OfflineSyncStatus status)
+        {
+            IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(OfflineSyncStatus_Pack4)));
+            bool result = NativeMethods.sp_offline_sync_get_status(handle, ptr);
+            if (result)
+            {
+                var statusRecord = (OfflineSyncStatus_Pack4)Marshal.PtrToStructure(ptr, typeof(OfflineSyncStatus_Pack4));
+                status.queued_tracks = statusRecord.queued_tracks;
+                status.queued_bytes = statusRecord.queued_bytes;
+                status.done_tracks = statusRecord.done_tracks;
+                status.done_bytes = statusRecord.done_bytes;
+                status.copied_tracks = statusRecord.copied_tracks;
+                status.copied_bytes = statusRecord.copied_bytes;
+                status.error_tracks = statusRecord.error_tracks;
+                status.willnotcopy_tracks = statusRecord.willnotcopy_tracks;
+                status.syncing = statusRecord.syncing;
+            }
+            else
+            {
+                status = new OfflineSyncStatus();
+            }
+            Marshal.FreeHGlobal(ptr);
+            return result;
+        }
+
+        static bool OfflineSyncGetStatus_PackDefault(IntPtr handle, ref OfflineSyncStatus status)
+        {
+            IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(OfflineSyncStatus_PackDefault)));
+            bool result = NativeMethods.sp_offline_sync_get_status(handle, ptr);
+            if (result)
+            {
+                var statusRecord = (OfflineSyncStatus_PackDefault)Marshal.PtrToStructure(ptr, typeof(OfflineSyncStatus_Pack4));
+                status.queued_tracks = statusRecord.queued_tracks;
+                status.queued_bytes = statusRecord.queued_bytes;
+                status.done_tracks = statusRecord.done_tracks;
+                status.done_bytes = statusRecord.done_bytes;
+                status.copied_tracks = statusRecord.copied_tracks;
+                status.copied_bytes = statusRecord.copied_bytes;
+                status.error_tracks = statusRecord.error_tracks;
+                status.willnotcopy_tracks = statusRecord.willnotcopy_tracks;
+                status.syncing = statusRecord.syncing;
+            }
+            else
+            {
+                status = new OfflineSyncStatus();
+            }
+            Marshal.FreeHGlobal(ptr);
+            return result;
+        }
+
+        delegate bool OfflineSyncGetStatusDelegate(IntPtr handle, ref OfflineSyncStatus status);
+
+        static readonly OfflineSyncGetStatusDelegate PlatformOfflineSyncGetStatus = GetOfflineSyncGetStatusForPlatform();
+
+        static OfflineSyncGetStatusDelegate GetOfflineSyncGetStatusForPlatform()
+        {
+            var plat = Environment.OSVersion.Platform;
+            int ptrSize = Marshal.SizeOf(typeof(IntPtr));
+            switch (plat)
+            {
+                case PlatformID.Win32NT:
+                    if (ptrSize == 4)
+                    {
+                        return OfflineSyncGetStatus_Pack4;
+                    }
+                    return OfflineSyncGetStatus_PackDefault;
+                default:
+                    return OfflineSyncGetStatus_PackDefault;
+            }
+        }
+
         public bool OfflineSyncGetStatus(ref OfflineSyncStatus status)
         {
-            if (NativeMethods.sp_offline_sync_get_status(_handle, ref status))
-            {
-                return true;
-            }
-            status = new OfflineSyncStatus();
-            return false;
+            return PlatformOfflineSyncGetStatus(_handle, ref status);
         }
+
         public int OfflineTimeLeft()
         {
             return NativeMethods.sp_offline_time_left(_handle);

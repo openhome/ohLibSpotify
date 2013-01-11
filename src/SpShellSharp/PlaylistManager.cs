@@ -21,6 +21,24 @@ namespace SpShellSharp
             iBrowser = aBrowser;
             iCallbacks = new Callbacks(this);
         }
+        public int CmdUpdateSubscriptions(string[] aArgs)
+        {
+            var pc = iSession.Playlistcontainer();
+            for (int i = 0; i != pc.NumPlaylists(); ++i)
+            {
+                switch (pc.PlaylistType(i))
+                {
+                    case PlaylistType.Playlist:
+                        var playlist = pc.Playlist(i);
+                        Playlist.UpdateSubscribers(iSession, playlist);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            iSubscriptionsUpdated = true;
+            return 1;
+        }
 
         public int CmdPlaylists(string[] aArgs)
         {
@@ -330,6 +348,84 @@ namespace SpShellSharp
             }
         }
 
+        static readonly Dictionary<PlaylistOfflineStatus, string> OfflineStatus = new Dictionary<PlaylistOfflineStatus, string> {
+            { PlaylistOfflineStatus.No, "None" },
+            { PlaylistOfflineStatus.Yes, "Synchronized" },
+            { PlaylistOfflineStatus.Downloading, "Downloading" },
+            { PlaylistOfflineStatus.Waiting, "Waiting" }
+        };
 
+        public int CmdPlaylistOffline(string[] aArgs)
+        {
+            Link plink = null;
+            Playlist playlist = null;
+            try
+            {
+                if (aArgs.Length == 2 && aArgs[1] == "status")
+                {
+                    Console.WriteLine("Offline status");
+                    Console.WriteLine("  {0} tracks to sync", iSession.OfflineTracksToSync());
+                    Console.WriteLine("  {0} offline playlists in total", iSession.OfflineNumPlaylists());
+                    return 1;
+                }
+
+                if (aArgs.Length < 2 || aArgs.Length > 3)
+                {
+                    Console.WriteLine("Usage: offline status | <playlist-uri> [<on|off>]");
+                    return 1;
+                }
+
+                plink = Link.CreateFromString(aArgs[1]);
+                if (plink == null)
+                {
+                    Console.Error.WriteLine("{0} is not a spotify link", aArgs[1]);
+                    return -1;
+                }
+
+                if (plink.Type() != LinkType.Playlist)
+                {
+                    Console.Error.WriteLine("{0} is not a playlist link", aArgs[1]);
+                    return -1;
+                }
+
+                playlist = Playlist.Create(iSession, plink);
+
+                if (aArgs.Length == 3)
+                {
+                    bool on;
+                    if (aArgs[2].ToLowerInvariant() == "on")
+                    {
+                        on = true;
+                    }
+                    else if (aArgs[2].ToLowerInvariant() == "off")
+                    {
+                        on = false;
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Invalid mode: {0}", aArgs[2]);
+                        return -1;
+                    }
+
+                    Playlist.SetOfflineMode(iSession, playlist, on);
+                }
+                else
+                {
+                    var s = Playlist.GetOfflineStatus(iSession, playlist);
+                    Console.WriteLine("Offline status for {0} ({1})", aArgs[1], playlist.Name());
+                    Console.WriteLine("  Status: {0}", OfflineStatus[s]);
+                    if (s == PlaylistOfflineStatus.Downloading)
+                    {
+                        Console.WriteLine("    {0}% complete", Playlist.GetOfflineDownloadCompleted(iSession, playlist));
+                    }
+                }
+                return 1;
+            }
+            finally
+            {
+                if (playlist != null) playlist.Release();
+                if (plink != null) plink.Release();
+            }
+        }
     }
 }

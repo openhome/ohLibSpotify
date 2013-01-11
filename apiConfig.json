@@ -1,12 +1,7 @@
 {
-    "ignore":["sp_uint64", "bool", "byte", "sp_subscribers"],
+    "ignore":["sp_uint64", "bool", "byte", "sp_subscribers", "sp_offline_sync_status"],
     "namespace":"SpotifySharp",
     "structs":[
-        {
-            "native-name":"sp_offline_sync_status",
-            "managed-name":"OfflineSyncStatus",
-            "force-public":true
-        },
         {
             "native-name":"sp_session",
             "managed-name":"SpotifySession",
