@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright 2013 Openhome.
+// License: 2-clause BSD. See LICENSE.txt for details.
+
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;

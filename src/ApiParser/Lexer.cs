@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright 2013 Openhome.
+// License: 2-clause BSD. See LICENSE.txt for details.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -264,19 +267,6 @@ namespace ApiParser
             [0-9]           # First digit
             [-+.0-9a-zA-Z]* # Rest of the number (Validation occurs during parsing)
             ";
-
-        // Number regex borrowed from our JSON parser. Probably not 1--% accurate
-        // for C, but it's unlikely to matter.
-        //const string NumberRegex     = @"
-        //    -?                             # Optional minus
-        //    (?:
-        //      0 |                          # Leading zero only allowed on its own (e.g. 0, 0.1, 0e1)
-        //      [1-9][0-9]*                   # Otherwise leading digit must be non-zero (so no 0123, 0001)
-        //    )
-        //   (?:[.][0-9]*)?                 # Optional fraction
-        //    (?:[Ee][+-]?[0-9]+)?           # Optional exponent
-        //    (?![A-Za-z0-9_])               # Must not be followed by an alphanumeric character
-        //    ";
 
         public static LexerBuilder MkBuilder()
         {
