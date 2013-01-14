@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("SpotifySharp")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Linn Products Ltd")]
+[assembly: AssemblyCompany("OpenHome")]
 [assembly: AssemblyProduct("SpotifySharp")]
-[assembly: AssemblyCopyright("Copyright © Linn Products Ltd 2012")]
+[assembly: AssemblyCopyright("Copyright 2013 OpenHome")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

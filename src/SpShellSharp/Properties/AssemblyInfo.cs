@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("SpShellSharp")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Linn Products Ltd")]
+[assembly: AssemblyCompany("OpenHome")]
 [assembly: AssemblyProduct("SpShellSharp")]
-[assembly: AssemblyCopyright("Copyright © Linn Products Ltd 2013")]
+[assembly: AssemblyCopyright("Copyright 2013 OpenHome")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
