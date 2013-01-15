@@ -139,7 +139,8 @@ namespace SpotifySharp
                         proxy = proxy.IntPtr,
                         proxy_username = proxyUsername.IntPtr,
                         proxy_password = proxyPassword.IntPtr,
-                        ca_certs_filename = caCertsFilename.IntPtr,
+                        // TODO: ifdef the ca_certs_filename initialization so it's only there on Linux.
+                        //ca_certs_filename = caCertsFilename.IntPtr,
                         tracefile = traceFile.IntPtr,
                     };
                     // Note: sp_session_create will invoke a callback, so it's important that

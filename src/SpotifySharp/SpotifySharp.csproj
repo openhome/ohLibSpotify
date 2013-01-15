@@ -17,7 +17,6 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -26,7 +25,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -67,7 +65,29 @@
     <Compile Include="UserDataTable.cs" />
     <Compile Include="Utf8String.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ApiParser\ApiParser.csproj">
+      <Project>{B4D0F1CC-A5D5-416C-BB12-031E61C4A47D}</Project>
+      <Name>ApiParser</Name>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies> 
+    </ProjectReference>
+    <ProjectReference Include="..\ManagedApiBuilder\ManagedApiBuilder.csproj">
+      <Project>{D7E6E4EC-075B-43F3-8B88-C65C43C25867}</Project>
+      <Name>ManagedApiBuilder</Name>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies> 
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="..\SharedSettings.targets" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="ParseSpotifyApi" Outputs="parsed-api.json">
+    <Message Text="Parse Spotify api.h" />
+    <Exec Command="$(OutputPath)\ApiParser.exe libspotify\api.h &gt; $(OutputPath)\parsed-api.json" />
+  </Target>
+  <Target Name="GenerateCode" Outputs="GeneratedCode.cs" DependsOnTargets="ParseSpotifyApi">
+    <Message Text="Generate C# code" />
+    <Exec Command="$(OutputPath)\ManagedApiBuilder.exe $(OutputPath)\parsed-api.json api-config.json &gt; GeneratedCode.cs" />
+  </Target>
+  <Target Name="BeforeBuild" DependsOnTargets="GenerateCode" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
