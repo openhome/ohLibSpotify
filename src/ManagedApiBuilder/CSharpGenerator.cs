@@ -245,7 +245,7 @@ namespace ManagedApiBuilder
                 return aIndent +"// Failed to generate: " + aFunctionName;
             }
             string newResult = assembler.GeneratePInvokeDeclaration(aIndent);
-            return newResult;
+            return newResult.Replace("\n", Environment.NewLine);
         }
 
         public string GenerateRawDelegate(string aIndent, string aFunctionName, FunctionCType aFunctionType)
@@ -257,7 +257,7 @@ namespace ManagedApiBuilder
             {
                 return aIndent +"// Failed to generate: " + aFunctionName;
             }
-            return assembler.GenerateNativeDelegateDeclaration(aIndent);
+            return assembler.GenerateNativeDelegateDeclaration(aIndent).Replace("\n", Environment.NewLine);
         }
 
         string GenerateFunctionDeclaration(string aIndent, string aTemplate, string aFunctionName, FunctionCType aFunctionType)
@@ -277,7 +277,7 @@ namespace ManagedApiBuilder
             if (returnAttribute != "")
                 returnAttribute = aIndent + returnAttribute + "\n";
             var returnTypeDeclaration = returnType.CreateReturnTypeDeclaration();
-            return String.Format(aTemplate, aIndent, returnTypeDeclaration, aFunctionName, argString, returnAttribute);
+            return String.Format(aTemplate, aIndent, returnTypeDeclaration, aFunctionName, argString, returnAttribute); //.Replace("\n", Environment.NewLine);
         }
 
         IEnumerable<string> SplitName(string aName)
@@ -346,8 +346,8 @@ namespace ManagedApiBuilder
                 }
                 methodBuilder.Append(GenerateCSharpWrappingMethod(aIndent+"    ", kvpFunction.Key, aHandleName, kvpFunction.Value));
             }
-            methodBuilder.AppendLine(aIndent + "}");
-            return methodBuilder.ToString();
+            methodBuilder.Append(aIndent + "}\n");
+            return methodBuilder.ToString().Replace("\n", Environment.NewLine);
         }
 
         FunctionAssembler AssembleFunction(string aFunctionName, FunctionCType aFunctionType, string aHandleName, string aMethodName)
@@ -420,7 +420,7 @@ namespace ManagedApiBuilder
             return assembler;
         }
 
-        public string GenerateCSharpWrappingMethod(string aIndent, string aFunctionName, string aHandleName, FunctionCType aFunctionType)
+        string GenerateCSharpWrappingMethod(string aIndent, string aFunctionName, string aHandleName, FunctionCType aFunctionType)
         {
             if (!aFunctionName.StartsWith(aHandleName+"_"))
             {
@@ -537,7 +537,7 @@ namespace ManagedApiBuilder
                     managedMemberPrefix + PascalCaseMemberName(aEnumName, DropPrefix(x.Name, memberPrefix)),
                     x.Value));
             var joinedConstantStrings = String.Join("", constantStrings);
-            return String.Format(EnumTemplate, aIndent, managedName, joinedConstantStrings);
+            return String.Format(EnumTemplate, aIndent, managedName, joinedConstantStrings).Replace("\n", Environment.NewLine);
         }
 
         const string StructTemplate =
@@ -574,7 +574,7 @@ namespace ManagedApiBuilder
                 };
             }
             string visibility = config.ForcePublic ? "public" : "internal";
-            return String.Format(StructTemplate, aIndent, config.ManagedName, joinedFieldStrings, visibility);
+            return String.Format(StructTemplate, aIndent, config.ManagedName, joinedFieldStrings, visibility).Replace("\n", Environment.NewLine);
         }
     }
 }
