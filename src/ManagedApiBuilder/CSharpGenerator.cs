@@ -3,12 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using ApiParser;
-using Newtonsoft.Json;
 
 namespace ManagedApiBuilder
 {
@@ -42,7 +39,7 @@ namespace ManagedApiBuilder
         }
         public string CreateParameterDeclaration(string aParameterName)
         {
-            return GetAttributeString("") + GetTypeString() + " @" + aParameterName;
+            return GetAttributeString() + GetTypeString() + " @" + aParameterName;
         }
         public string CreateReturnTypeDeclaration()
         {
@@ -56,7 +53,7 @@ namespace ManagedApiBuilder
         public string CreateFieldAttribute()
         {
             if (IsRef) throw new Exception("Cannot use ref type as return type.");
-            return GetAttributeString("");
+            return GetAttributeString();
         }
         public string CreateFieldDeclaration(string aFieldName)
         {
@@ -72,13 +69,14 @@ namespace ManagedApiBuilder
             "{0}{1}{2} {3}({4});\n";
         const string DllImportModifiers = "internal static extern ";
         const string RawDelegateModifiers = "internal delegate ";*/
+        /*
         const string DllImportTemplate =
             "{0}[DllImport(\"libspotify\")]\n" +
             "{4}" +
             "{0}internal static extern {1} {2}({3});\n";
         const string RawDelegateTemplate =
             "{4}" +
-            "{0}internal delegate {1} {2}({3});\n";
+            "{0}internal delegate {1} {2}({3});\n";*/
 
         HashSet<string> iEnumNames;
         HashSet<string> iStructNames;
@@ -250,8 +248,8 @@ namespace ManagedApiBuilder
 
         public string GenerateRawDelegate(string aIndent, string aFunctionName, FunctionCType aFunctionType)
         {
-            string oldResult = GenerateFunctionDeclaration(
-                aIndent, RawDelegateTemplate, aFunctionName, aFunctionType);
+            //string oldResult = GenerateFunctionDeclaration(
+            //    aIndent, RawDelegateTemplate, aFunctionName, aFunctionType);
             var assembler = AssembleFunction(aFunctionName, aFunctionType, null, null);
             if (assembler == null)
             {
@@ -260,7 +258,7 @@ namespace ManagedApiBuilder
             return assembler.GenerateNativeDelegateDeclaration(aIndent).Replace("\n", Environment.NewLine);
         }
 
-        string GenerateFunctionDeclaration(string aIndent, string aTemplate, string aFunctionName, FunctionCType aFunctionType)
+        /*string GenerateFunctionDeclaration(string aIndent, string aTemplate, string aFunctionName, FunctionCType aFunctionType)
         {
             string argString;
             if (aFunctionType.Arguments.Count == 1 && aFunctionType.Arguments[0].CType.ToString() == "void")
@@ -278,14 +276,14 @@ namespace ManagedApiBuilder
                 returnAttribute = aIndent + returnAttribute + "\n";
             var returnTypeDeclaration = returnType.CreateReturnTypeDeclaration();
             return String.Format(aTemplate, aIndent, returnTypeDeclaration, aFunctionName, argString, returnAttribute); //.Replace("\n", Environment.NewLine);
-        }
+        }*/
 
-        IEnumerable<string> SplitName(string aName)
+        static IEnumerable<string> SplitName(string aName)
         {
             return aName.Split('_');
         }
 
-        string PascalCase(string aFragment)
+        static string PascalCase(string aFragment)
         {
             if (aFragment.Length == 0)
                 return "";
@@ -293,20 +291,20 @@ namespace ManagedApiBuilder
             return aFragment.Substring(0, 1).ToUpperInvariant() + aFragment.Substring(1).ToLowerInvariant();
         }
 
-        string PascalCase(IEnumerable<string> aFragments)
+        static string PascalCase(IEnumerable<string> aFragments)
         {
             return String.Join("", aFragments.Select(PascalCase));
         }
 
-        string CamelCase(IEnumerable<string> aFragments)
+        /*string CamelCase(IEnumerable<string> aFragments)
         {
             var fragments = aFragments.ToList();
             var first = fragments[0].ToLowerInvariant();
             var remaining = fragments.Skip(1).Select(PascalCase);
             return first + String.Join("", remaining);
-        }
+        }*/
 
-        string PascalCaseMemberName(string aParentName, string aMemberName)
+        static string PascalCaseMemberName(string aMemberName)
         {
             //if (!aMemberName.ToUpperInvariant().StartsWith(aParentName.ToUpperInvariant() + "_")) throw new Exception("Bad member name: " + aMemberName);
             //string trimmedName = aMemberName.Substring(aParentName.Length + 1);
@@ -498,15 +496,17 @@ namespace ManagedApiBuilder
             return retval;
         }
 
-        string DefaultManagedClassName(string aNativeName)
+        static string DefaultManagedClassName(string aNativeName)
         {
             return DefaultManagedTypeName(aNativeName);
         }
-        string DefaultManagedEnumName(string aNativeName)
+
+        static string DefaultManagedEnumName(string aNativeName)
         {
             return DefaultManagedTypeName(aNativeName);
         }
-        string DefaultManagedTypeName(string aNativeName)
+
+        static string DefaultManagedTypeName(string aNativeName)
         {
             if (aNativeName.StartsWith("sp_"))
             {
@@ -515,7 +515,7 @@ namespace ManagedApiBuilder
             return PascalCase(SplitName(aNativeName));
         }
 
-        string DefaultNativeConstantPrefix(string aNativeName)
+        static string DefaultNativeConstantPrefix(string aNativeName)
         {
             return aNativeName.ToUpperInvariant() + "_";
         }
@@ -534,7 +534,7 @@ namespace ManagedApiBuilder
                 String.Format(
                     EnumConstantTemplate,
                     aIndent + SingleIndent,
-                    managedMemberPrefix + PascalCaseMemberName(aEnumName, DropPrefix(x.Name, memberPrefix)),
+                    managedMemberPrefix + PascalCaseMemberName(DropPrefix(x.Name, memberPrefix)),
                     x.Value));
             var joinedConstantStrings = String.Join("", constantStrings);
             return String.Format(EnumTemplate, aIndent, managedName, joinedConstantStrings).Replace("\n", Environment.NewLine);
