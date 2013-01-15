@@ -55,9 +55,9 @@
     <Compile Include="TopLister.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SpotifySharp\SpotifySharp.csproj">
+    <ProjectReference Include="..\ohLibSpotify\ohLibSpotify.csproj">
       <Project>{39F7268A-8C23-4434-95AA-2DE39A8AEE36}</Project>
-      <Name>SpotifySharp</Name>
+      <Name>ohLibSpotify</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

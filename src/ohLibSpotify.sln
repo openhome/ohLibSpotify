@@ -5,7 +5,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiParser", "ApiParser\ApiP
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManagedApiBuilder", "ManagedApiBuilder\ManagedApiBuilder.csproj", "{D7E6E4EC-075B-43F3-8B88-C65C43C25867}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifySharp", "SpotifySharp\SpotifySharp.csproj", "{39F7268A-8C23-4434-95AA-2DE39A8AEE36}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ohLibSpotify", "ohLibSpotify\ohLibSpotify.csproj", "{39F7268A-8C23-4434-95AA-2DE39A8AEE36}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpShellSharp", "SpShellSharp\SpShellSharp.csproj", "{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}"
 EndProject
