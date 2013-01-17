@@ -11,29 +11,66 @@ functions become instance methods on the appropriate class. It does all the
 necessary conversions to and from UTF8, so that users see only managed
 strings.
 
-## go / go.bat
+## Quick start
+
+Sync up these two repositories:
+
+    git clone https://github.com/openhome/ohdevtools.git
+    git clone https://github.com/openhome/ohLibSpotify.git
+
+Build (note that building this way will fetch dependencies from the Internet):
+
+    cd ohLibSpotify
+    go build
+
+You need a Spotify API key to use libspotify in an app. You can get one here:
+
+    https://developer.spotify.com/technologies/libspotify/keys/
+
+Copy it into your ohLibSpotify directory.
+
+Now you can run the demo console app:
+
+    build/bin/Release/SpShellSharp.exe
+
+## Other platforms
+
+Currently, only the Windows-x86 platform has been tested. Our focus will be
+on Windows, Linux and Mac, but patches for iOS and Android are welcome and we
+do try to avoid doing anything that would make porting difficult. (In
+particular, we only use static methods when passing callbacks to P/Invoke
+methods, so it should not be too hard to run on Mono with the JIT disabled,
+as is necessary on iOS.)
+
+Note that the ohLibSpotify.dll assembly is platform-specific. You need to
+build a different version for each platform. The managed API should remain
+the same between platforms.
+
+## Directory contents
+
+### go / go.bat
 
 Provides the "go" commands that can be used to fetch dependencies,
 run builds and maintain files. Before you can invoke these commands,
 you must fetch the ohDevTools repository and place it side-by-side
 with this one. Run "go" on its own for a list of commands.
 
-## projectdata
+### projectdata
 
 Contains configuration information used by automated builds and dependency
 fetching tools.
 
-## src
+### src
 
 Contains the source code of the project.
 
-## dependencies
+### dependencies
 
 This directory will be created by the "go fetch" command. It should contain
 external dependencies required during the build process, such as non-framework
 third-party assemblies.
 
-## build
+### build
 
 This directory will be created during a build. It contains whatever
 assemblies, libraries and packages are created by the build.
