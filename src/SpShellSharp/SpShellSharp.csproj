@@ -13,55 +13,63 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
-
   <!-- Platform-specific stuff -->
   <!-- The path to the spotify headers varies by platform. -->
   <PropertyGroup Condition=" '$(Platform)' == 'Linux-x86' ">
+    <SpotifyLibraryPath>libspotify/lib/libspotify.so</SpotifyLibraryPath>
     <PlatformTarget>x86</PlatformTarget>
     <PlatformDefines>SYSTEM_LINUX;ARCH_X86</PlatformDefines>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'Linux-armv5' ">
+    <SpotifyLibraryPath>libspotify/lib/libspotify.so</SpotifyLibraryPath>
     <PlatformTarget>x86</PlatformTarget>
     <PlatformDefines>SYSTEM_LINUX;ARCH_ARM</PlatformDefines>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'Linux-armv6' ">
+    <SpotifyLibraryPath>libspotify/lib/libspotify.so</SpotifyLibraryPath>
     <PlatformTarget>x86</PlatformTarget>
     <PlatformDefines>SYSTEM_LINUX;ARCH_ARM</PlatformDefines>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'Linux-armv7' ">
+    <SpotifyLibraryPath>libspotify/lib/libspotify.so</SpotifyLibraryPath>
     <PlatformTarget>x86</PlatformTarget>
     <PlatformDefines>SYSTEM_LINUX;ARCH_ARM</PlatformDefines>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'Linux-x64' ">
+    <SpotifyLibraryPath>libspotify/lib/libspotify.so</SpotifyLibraryPath>
     <PlatformTarget>x64</PlatformTarget>
     <PlatformDefines>SYSTEM_LINUX;ARCH_X64</PlatformDefines>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'Windows-x86' ">
+    <SpotifyLibraryPath>libspotify/lib/libspotify.dll</SpotifyLibraryPath>
     <PlatformTarget>x86</PlatformTarget>
     <PlatformDefines>SYSTEM_WINDOWS;ARCH_X86</PlatformDefines>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'Mac-x86' ">
+    <SpotifyLibraryPath>libspotify/libspotify.framework/libspotify</SpotifyLibraryPath>
     <PlatformTarget>x86</PlatformTarget>
     <PlatformDefines>SYSTEM_MAC;ARCH_X86</PlatformDefines>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'Mac-x64' ">
+    <SpotifyLibraryPath>libspotify/libspotify.framework/libspotify</SpotifyLibraryPath>
     <PlatformTarget>x64</PlatformTarget>
     <PlatformDefines>SYSTEM_MAC;ARCH_X64</PlatformDefines>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'iOs-x86' ">
+    <SpotifyLibraryPath>libspotify/libspotify.framework/libspotify</SpotifyLibraryPath>
     <PlatformTarget>x86</PlatformTarget>
     <PlatformDefines>SYSTEM_IOS;ARCH_X86</PlatformDefines>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'iOs-armv6' ">
+    <SpotifyLibraryPath>libspotify/libspotify.framework/libspotify</SpotifyLibraryPath>
     <PlatformTarget>x86</PlatformTarget>
     <PlatformDefines>SYSTEM_IOS;ARCH_ARM;ARCH_ARMV6</PlatformDefines>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'iOs-armv7' ">
+    <SpotifyLibraryPath>libspotify/libspotify.framework/libspotify</SpotifyLibraryPath>
     <PlatformTarget>x86</PlatformTarget>
     <PlatformDefines>SYSTEM_IOS;ARCH_ARM;ARCH_ARMV7</PlatformDefines>
   </PropertyGroup>
-
-
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -97,6 +105,9 @@
     <Compile Include="SpShell.cs" />
     <Compile Include="StarManager.cs" />
     <Compile Include="TopLister.cs" />
+    <Content Include="$(MSBuildProjectDirectory)\..\..\dependencies\$(Platform)\$(SpotifyLibraryPath)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ohLibSpotify\ohLibSpotify.csproj">
