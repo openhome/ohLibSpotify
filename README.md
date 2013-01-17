@@ -46,6 +46,23 @@ Note that the ohLibSpotify.dll assembly is platform-specific. You need to
 build a different version for each platform. The managed API should remain
 the same between platforms.
 
+## Community
+
+Discuss ohLibSpotify here:
+
+    http://forum.openhome.org/forumdisplay.php?fid=6
+
+Get the source code and submit bug reports on github:
+
+    https://github.com/openhome/ohLibSpotify
+
+You can also ask questions on Stack Overflow tagged with 'libspotify' or
+'ohlibspotify'. Stack Overflow is a good place for general questions about
+libspotify that are not specific to ohLibSpotify, as you will find a wider
+audience.
+
+    http://stackoverflow.com/
+
 ## Directory contents
 
 ### go / go.bat
