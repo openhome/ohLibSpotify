@@ -1,6 +1,15 @@
 # README
 
-_Insert a description of the project here._
+ohLibSpotify is OpenHome's managed wrapper around the libspotify library.
+To use ohLibSpotify, an application needs only the managed ohLibSpotify.dll,
+and the native libspotify.so|.dll|.dylib. (It is not dependent on any other
+OpenHome library.)
+
+ohLibSpotify attempts to expose all libspotify entities - such as sessions,
+playlists and tracks - as regular C# classes, and where possible libspotify
+functions become instance methods on the appropriate class. It does all the
+necessary conversions to and from UTF8, so that users see only managed
+strings.
 
 ## go / go.bat
 
