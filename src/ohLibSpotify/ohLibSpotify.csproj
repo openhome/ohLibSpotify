@@ -13,7 +13,6 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
-
   <!-- Platform-specific stuff -->
   <!-- The path to the spotify headers varies by platform. -->
   <PropertyGroup Condition=" '$(Platform)' == 'Linux-x86' ">
@@ -71,8 +70,6 @@
     <PlatformTarget>x86</PlatformTarget>
     <PlatformDefines>SYSTEM_IOS;ARCH_ARM;ARCH_ARMV7</PlatformDefines>
   </PropertyGroup>
-
-
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -113,13 +110,11 @@
     <Compile Include="Playlist.cs" />
     <Compile Include="PlaylistContainer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RiffWriter.cs" />
     <Compile Include="Search.cs" />
     <Compile Include="Spotify.cs" />
     <Compile Include="SpotifyException.cs" />
     <Compile Include="SpotifyMarshalling.cs" />
     <Compile Include="SpotifySession.cs" />
-    <Compile Include="TestProgram.cs" />
     <Compile Include="TopListBrowse.cs" />
     <Compile Include="UserDataTable.cs" />
     <Compile Include="Utf8String.cs" />
