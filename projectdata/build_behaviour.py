@@ -12,7 +12,7 @@ require_version(22)
 
 
 class Builder(OpenHomeBuilder):
-    test_location = 'build/{assembly}/bin/{configuration}/{assembly}.dll'
+    test_location = 'build/bin/{configuration}/{assembly}.dll'
     def setup(self):
         self.set_nunit_location('dependencies/nuget/NUnit.Runners.2.6.1/tools/nunit-console-x86.exe')
 
@@ -23,7 +23,7 @@ class Builder(OpenHomeBuilder):
         self.msbuild('src/ohLibSpotify.sln', target='Build', platform=self.platform, configuration=self.configuration)
 
     def test(self):
-        pass
+        self.nunit('ToolTests')
 
     def publish(self):
         self.publish_package(

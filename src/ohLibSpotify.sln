@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ohLibSpotify", "ohLibSpotif
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpShellSharp", "SpShellSharp\SpShellSharp.csproj", "{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ToolTests", "ToolTests\ToolTests.csproj", "{90D9B4DC-2581-4443-8E3D-7381E5227EB3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|iOs-armv6 = Debug|iOs-armv6
@@ -211,6 +213,47 @@ Global
 		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Release|Mac-x86.Build.0 = Release|Mac-x86
 		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Release|Windows-x86.ActiveCfg = Release|Windows-x86
 		{387D7BAA-9FE6-4E11-88DC-BA44F6FC44E2}.Release|Windows-x86.Build.0 = Release|Windows-x86
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|iOs-armv6.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|iOs-armv6.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|iOs-armv7.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|iOs-armv7.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|iOs-x86.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|iOs-x86.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Linux-armv5.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Linux-armv5.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Linux-armv6.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Linux-armv6.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Linux-armv7.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Linux-armv7.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Linux-x64.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Linux-x64.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Linux-x86.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Linux-x86.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Mac-x64.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Mac-x64.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Mac-x86.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Mac-x86.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Windows-x86.ActiveCfg = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Debug|Windows-x86.Build.0 = Debug|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-armv6.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-armv6.Build.0 = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-armv7.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-x86.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-x86.Build.0 = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-armv5.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-armv5.Build.0 = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-armv6.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-armv6.Build.0 = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-armv7.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-x64.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-x64.Build.0 = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-x86.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Mac-x64.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Mac-x64.Build.0 = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Mac-x86.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Mac-x86.Build.0 = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Windows-x86.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Windows-x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
