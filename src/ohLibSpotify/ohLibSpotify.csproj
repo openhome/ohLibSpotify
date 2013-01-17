@@ -13,19 +13,78 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+
+  <!-- Platform-specific stuff -->
+  <!-- The path to the spotify headers varies by platform. -->
+  <PropertyGroup Condition=" '$(Platform)' == 'Linux-x86' ">
+    <SpotifyPath>libspotify/include/libspotify</SpotifyPath>
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_LINUX;ARCH_X86</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Linux-armv5' ">
+    <SpotifyPath>libspotify/include/libspotify</SpotifyPath>
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_LINUX;ARCH_ARM</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Linux-armv6' ">
+    <SpotifyPath>libspotify/include/libspotify</SpotifyPath>
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_LINUX;ARCH_ARM</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Linux-armv7' ">
+    <SpotifyPath>libspotify/include/libspotify</SpotifyPath>
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_LINUX;ARCH_ARM</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Linux-x64' ">
+    <SpotifyPath>libspotify/include/libspotify</SpotifyPath>
+    <PlatformTarget>x64</PlatformTarget>
+    <PlatformDefines>SYSTEM_LINUX;ARCH_X64</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Windows-x86' ">
+    <SpotifyPath>libspotify/include/libspotify</SpotifyPath>
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_WINDOWS;ARCH_X86</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Mac-x86' ">
+    <SpotifyPath>libspotify\libspotify.framework\Headers</SpotifyPath>
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_MAC;ARCH_X86</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Mac-x64' ">
+    <SpotifyPath>libspotify\libspotify.framework\Headers</SpotifyPath>
+    <PlatformTarget>x64</PlatformTarget>
+    <PlatformDefines>SYSTEM_MAC;ARCH_X64</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'iOs-x86' ">
+    <SpotifyPath>libspotify\libspotify.framework\Headers</SpotifyPath>
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_IOS;ARCH_X86</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'iOs-armv6' ">
+    <SpotifyPath>libspotify\libspotify.framework\Headers</SpotifyPath>
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_IOS;ARCH_ARM;ARCH_ARMV6</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'iOs-armv7' ">
+    <SpotifyPath>libspotify\libspotify.framework\Headers</SpotifyPath>
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_IOS;ARCH_ARM;ARCH_ARMV7</PlatformDefines>
+  </PropertyGroup>
+
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;$(PlatformDefines)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;$(PlatformDefines)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -81,7 +140,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="ParseSpotifyApi" Outputs="parsed-api.json">
     <Message Text="Parse Spotify api.h" />
-    <Exec Command="$(OutputPath)\ApiParser.exe libspotify\api.h &gt; $(OutputPath)\parsed-api.json" />
+    <Exec Command="$(OutputPath)\ApiParser.exe $(DependenciesPath)\$(Platform)\$(SpotifyPath)\api.h &gt; $(OutputPath)\parsed-api.json" />
   </Target>
   <Target Name="GenerateCode" Outputs="GeneratedCode.cs" DependsOnTargets="ParseSpotifyApi">
     <Message Text="Generate C# code" />

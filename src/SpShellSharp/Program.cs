@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -143,7 +144,23 @@ namespace SpShellSharp
             string username = args.Length > 0 ? args[0] : null;
             string blob = args.Length > 1 ? args[1] : null;
             string password = null;
+            byte[] appkey;
+
             bool selftest = args.Length > 2 ? args[2] == "selftest" : false;
+            try
+            {
+                appkey = File.ReadAllBytes("spotify_appkey.key");
+            }
+            catch (IOException)
+            {
+                Console.WriteLine("Please download your binary app key from Spotify and put it in");
+                Console.WriteLine("the working directory as 'spotify_appkey.key'. See here:");
+                Console.WriteLine("https://developer.spotify.com/technologies/libspotify/keys/");
+                Console.WriteLine("");
+                Console.WriteLine("Press any key...");
+                Console.ReadKey();
+                return;
+            }
 
             using (var consoleReader = new ConsoleReader())
             {
@@ -171,7 +188,7 @@ namespace SpShellSharp
                     password = (Console.ReadLine() ?? "").TrimEnd();
                 }
 
-                using (SpShell shell = new SpShell(spotifyEvent, username, password, blob, selftest, consoleReader))
+                using (SpShell shell = new SpShell(spotifyEvent, username, password, blob, selftest, consoleReader, appkey))
                 {
                     //consoleReader.RequestInput("> ");
                     int next_timeout = 0;

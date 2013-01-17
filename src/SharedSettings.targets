@@ -8,10 +8,11 @@
   -->
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">Windows-x86</Platform>
     <TopOutputPath>$(MSBuildProjectDirectory)\..\..\build</TopOutputPath>
     <OutputPath>$(TopOutputPath)\bin\$(Configuration)</OutputPath>
     <IntermediateOutputPath>$(TopOutputPath)\obj\$(Configuration)</IntermediateOutputPath>
     <PackageOutputPath>$(MSBuildProjectDirectory)\..\..\build\packages</PackageOutputPath>
+    <DependenciesPath>$(MSBuildProjectDirectory)\..\..\dependencies</DependenciesPath>
   </PropertyGroup>
 </Project>

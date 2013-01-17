@@ -112,7 +112,10 @@ namespace SpotifySharp
             using (var proxy = SpotifyMarshalling.StringToUtf8(config.Proxy))
             using (var proxyUsername = SpotifyMarshalling.StringToUtf8(config.ProxyUsername))
             using (var proxyPassword = SpotifyMarshalling.StringToUtf8(config.ProxyPassword))
+#if SYSTEM_LINUX
+            // The field is Linux-only.
             using (var caCertsFilename = SpotifyMarshalling.StringToUtf8(config.CACertsFilename))
+#endif
             using (var traceFile = SpotifyMarshalling.StringToUtf8(config.TraceFile))
             {
                 IntPtr appKeyPtr = IntPtr.Zero;
@@ -139,8 +142,10 @@ namespace SpotifySharp
                         proxy = proxy.IntPtr,
                         proxy_username = proxyUsername.IntPtr,
                         proxy_password = proxyPassword.IntPtr,
-                        // TODO: ifdef the ca_certs_filename initialization so it's only there on Linux.
-                        //ca_certs_filename = caCertsFilename.IntPtr,
+#if SYSTEM_LINUX
+                        // The ca_certs_filename field is Linux-only.
+                        ca_certs_filename = caCertsFilename.IntPtr,
+#endif
                         tracefile = traceFile.IntPtr,
                     };
                     // Note: sp_session_create will invoke a callback, so it's important that

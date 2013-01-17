@@ -11,25 +11,69 @@
     <RootNamespace>SpShellSharp</RootNamespace>
     <AssemblyName>SpShellSharp</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+
+  <!-- Platform-specific stuff -->
+  <!-- The path to the spotify headers varies by platform. -->
+  <PropertyGroup Condition=" '$(Platform)' == 'Linux-x86' ">
     <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_LINUX;ARCH_X86</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Linux-armv5' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_LINUX;ARCH_ARM</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Linux-armv6' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_LINUX;ARCH_ARM</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Linux-armv7' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_LINUX;ARCH_ARM</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Linux-x64' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <PlatformDefines>SYSTEM_LINUX;ARCH_X64</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Windows-x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_WINDOWS;ARCH_X86</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Mac-x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_MAC;ARCH_X86</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'Mac-x64' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <PlatformDefines>SYSTEM_MAC;ARCH_X64</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'iOs-x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_IOS;ARCH_X86</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'iOs-armv6' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_IOS;ARCH_ARM;ARCH_ARMV6</PlatformDefines>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'iOs-armv7' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <PlatformDefines>SYSTEM_IOS;ARCH_ARM;ARCH_ARMV7</PlatformDefines>
+  </PropertyGroup>
+
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;$(PlatformDefines)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;$(PlatformDefines)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -60,6 +104,7 @@
       <Name>ohLibSpotify</Name>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="..\SharedSettings.targets" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

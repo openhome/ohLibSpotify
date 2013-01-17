@@ -17,14 +17,13 @@ class Builder(OpenHomeBuilder):
         self.set_nunit_location('dependencies/nuget/NUnit.Runners.2.6.1/tools/nunit-console-x86.exe')
 
     def clean(self):
-        self.msbuild('src/SpotifySharp.sln', target='Clean', configuration=self.configuration)
+        self.msbuild('src/ohLibSpotify.sln', target='Clean', platform=self.platform, configuration=self.configuration)
 
     def build(self):
-        self.msbuild('src/SpotifySharp.sln', target='Build', configuration=self.configuration)
+        self.msbuild('src/ohLibSpotify.sln', target='Build', platform=self.platform, configuration=self.configuration)
 
     def test(self):
         pass
-        #self.nunit('ohOs.Tests')
 
     def publish(self):
         self.publish_package(

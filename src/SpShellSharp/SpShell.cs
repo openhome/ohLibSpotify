@@ -36,16 +36,15 @@ namespace SpShellSharp
         StarManager iStarManager;
         PlaylistManager iPlaylistManager;
 
-        public SpShell(AutoResetEvent aSpotifyEvent, string aUsername, string aPassword, string aBlob, bool aSelftest, ConsoleReader aReader)
+        public SpShell(AutoResetEvent aSpotifyEvent, string aUsername, string aPassword, string aBlob, bool aSelftest, ConsoleReader aReader, byte[] aAppKey)
         {
             iReader = aReader;
             iSpotifyEvent = aSpotifyEvent;
-            byte[] appkey = File.ReadAllBytes("spotify_appkey.key");
             SpotifySessionConfig config = new SpotifySessionConfig();
             config.ApiVersion = 12;
             config.CacheLocation = aSelftest ? "" : "tmp";
             config.SettingsLocation = aSelftest ? "" : "tmp";
-            config.ApplicationKey = appkey;
+            config.ApplicationKey = aAppKey;
             config.UserAgent = "spshell#";
             config.Listener = this;
 
