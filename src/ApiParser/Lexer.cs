@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ApiParser
@@ -61,7 +62,29 @@ namespace ApiParser
         }
         public override string ToString()
         {
-            return String.Format("({0},\"{1}\"):{2}:{3}", Type, Content.Replace("\\", "\\\\").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t").Replace("\"", "\\\""), Line, Column);
+            return String.Format("({0},{1}):{2}:{3}", Type, ReprString(Content), Line, Column);
+        }
+
+        string ReprString(string aString)
+        {
+            var sb = new StringBuilder("\"");
+            for (int i = 0; i != aString.Length; ++i)
+            {
+                char ch = aString[i];
+                switch (ch)
+                {
+                    case '\\': sb.Append(@"\\"); break;
+                    case '"': sb.Append(@"\"""); break;
+                    case '\t': sb.Append(@"\t"); break;
+                    case '\r': sb.Append(@"\r"); break;
+                    case '\n': sb.Append(@"\n"); break;
+                    case '\b': sb.Append(@"\b"); break;
+                    case '\f': sb.Append(@"\f"); break;
+                    default: sb.Append(ch); break;
+                }
+            }
+            sb.Append('"');
+            return sb.ToString();
         }
 
     }
@@ -261,7 +284,9 @@ namespace ApiParser
             \""                              # Closing quote
             ";
 
-
+        // This regex isn't great. It will match arithmetic expressions when it
+        // really shouldn't, such as "4+3+1-9". Thankfully these don't occur in
+        // the libspotify headers.
         const string NumberRegex = @"
             -?              # Optional leading minus
             [0-9]           # First digit
