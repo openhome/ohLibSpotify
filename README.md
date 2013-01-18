@@ -13,6 +13,12 @@ strings.
 
 ## Quick start
 
+Prerequisites:
+
+ * Git
+ * Python 2.6/2.7 (technically you don't *need* Python, but it's much easier.)
+ * Visual Studio 2010 or Mono 3.0
+
 Sync up these two repositories:
 
     git clone https://github.com/openhome/ohdevtools.git
@@ -32,6 +38,8 @@ Copy it into your ohLibSpotify directory.
 Now you can run the demo console app:
 
     build/bin/Release/SpShellSharp.exe
+
+For more details, see doc/development.md
 
 ## Other platforms
 
