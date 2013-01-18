@@ -360,7 +360,7 @@ namespace ApiParser
                 Value);
         }
     }
-    class HeaderParser
+    public class HeaderParser
     {
         internal static string ToJsonString(string aString)
         {
@@ -717,6 +717,9 @@ namespace ApiParser
                     throw new Exception(String.Format("Expected ',', but got {0}", iTokenStream.Current.Content));
                 }
                 MoveNext();
+                var enumConstant = new EnumConstant();
+                StartCommentable(enumConstant);
+                EndCommentable(enumConstant);
                 if (iTokenStream.Current.Content == "}") break;
                 var name = ConsumeWord();
                 int value;
@@ -729,10 +732,9 @@ namespace ApiParser
                 {
                     value = nextValue;
                 }
+                enumConstant.Name = name;
+                enumConstant.Value = value;
                 nextValue = value + 1;
-                var enumConstant = new EnumConstant { Name = name, Value = value };
-                StartCommentable(enumConstant);
-                EndCommentable(enumConstant);
                 values.Add(enumConstant);
             }
             MoveNext();
@@ -882,7 +884,7 @@ namespace ApiParser
                         typeBuilders.Add(
                             componentType =>
                                 {
-                                    componentType.Qualifiers.Add("unsigned");
+                                    componentType.Qualifiers.Add("const");
                                     return componentType;
                                 });
                         continue;
