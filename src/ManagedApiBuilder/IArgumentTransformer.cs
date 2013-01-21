@@ -11,8 +11,6 @@ namespace ManagedApiBuilder
     interface IArgumentTransformer
     {
         bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aFunctionAssembler);
-        //bool CanApply(Declaration aCurrentArg, Declaration aNextArg, CType aReturnType);
-        //void Apply(Declaration aCurrentArg, Declaration aNextArg, CType aReturnType, IFunctionAssembler aAssembler);
     }
 
     class TrivialArgumentTransformer : IArgumentTransformer
@@ -50,7 +48,6 @@ namespace ManagedApiBuilder
                     break;
             }
             aAssembler.AddPInvokeParameter(pinvokeArgType, aNativeFunction.CurrentParameter.Name, aNativeFunction.CurrentParameter.Name);
-            //Console.WriteLine("foo {0} {1} {2}", aAssembler == null, aNativeFunction == null, aNativeFunction.CurrentParameter == null);
             aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, managedArgType);
             aNativeFunction.ConsumeArgument();
             return true;
@@ -145,7 +142,6 @@ namespace ManagedApiBuilder
 
             aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, null);
             aAssembler.SuppressManagedWrapper();
-            //aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, new CSharpType(className));
             aNativeFunction.ConsumeArgument();
             return true;
         }
@@ -174,7 +170,6 @@ namespace ManagedApiBuilder
 
             aAssembler.AddPInvokeParameter(new CSharpType(structName) { IsRef = true }, aNativeFunction.CurrentParameter.Name, null);
             aAssembler.SuppressManagedWrapper();
-            //aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, new CSharpType(className));
             aNativeFunction.ConsumeArgument();
             return true;
         }
@@ -217,22 +212,8 @@ namespace ManagedApiBuilder
     /// </summary>
     class StringReturnTransformer : IArgumentTransformer
     {
-        /*
-        public bool CanApply(Declaration aCurrentArg, Declaration aNextArg, CType aReturnType)
-        {
-            var matcher = Matcher.CType(
-                new TupleCType(aCurrentArg==null?null:aCurrentArg.CType, aNextArg==null?null:aNextArg.CType, aReturnType));
-            return (matcher.Match(new TupleCType(
-                new PointerCType(new NamedCType("char")),
-                new NamedCType("size_t"),
-                new NamedCType("int")
-                )));
-        }*/
-
         public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
         {
-            var matcher = Matcher.CType(
-                new TupleCType(aNativeFunction.CurrentParameterType, aNativeFunction.NextParameterType, aNativeFunction.ReturnType));
             if (!aNativeFunction.CurrentParameterType.MatchToPattern(
                 new PointerCType(new NamedCType("char"))).IsMatch)
             {
@@ -310,7 +291,6 @@ namespace ManagedApiBuilder
             string utf8StringName = "utf8_"+parameterName;
             aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, utf8StringName + ".IntPtr");
             aAssembler.AddPInvokeParameter(new CSharpType("int"), aNativeFunction.NextParameter.Name, utf8StringName + ".BufferLength");
-            //aAssembler.SetPInvokeReturn(new CSharpType("int"), "stringLength_"+parameterName);
             aAssembler.SetManagedReturn(new CSharpType("string"));
             aAssembler.InsertAtTop(      "string returnValue;");
 
@@ -330,15 +310,6 @@ namespace ManagedApiBuilder
 
     class StringArgumentTransformer : IArgumentTransformer
     {
-        /*
-        public bool CanApply(Declaration aCurrentArg, Declaration aNextArg, CType aReturnType)
-        {
-            var matcher = Matcher.CType(aCurrentArg==null?null:aCurrentArg.CType);
-            return (matcher.Match(
-                new PointerCType(new NamedCType("char"))
-                ));
-        }*/
-
         public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
         {
             var matcher = Matcher.CType(aNativeFunction.CurrentParameterType);
@@ -369,10 +340,6 @@ namespace ManagedApiBuilder
         }
         public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
         {
-            //var matcher = Matcher.CType(new TupleCType(
-            //    aNativeFunction.CurrentParameterType,
-            //    aNativeFunction.NextParameterType));
-
             var firstArgType = aNativeFunction.CurrentParameterType;
             var secondArgType = aNativeFunction.NextParameterType;
             bool secondArgIsInt = secondArgType.MatchToPattern(new NamedCType("int")).IsMatch;
@@ -521,34 +488,12 @@ namespace ManagedApiBuilder
 
     class RefArgumentTransformer : IArgumentTransformer
     {
-        /*
-        public bool CanApply(Declaration aCurrentArg, Declaration aNextArg, CType aReturnType)
-        {
-            PointerCType pointerType = aCurrentArg.CType as PointerCType;
-            if (pointerType == null) return false;
-            NamedCType nativeType = pointerType.BaseType as NamedCType;
-            if (nativeType == null) return false;
-            switch (nativeType.Name)
-            {
-                case "bool":
-                case "int":
-                    return true;
-                default:
-                    return false;
-            }
-        }*/
         readonly Dictionary<string, string> iEnumNativeToManagedMappings;
-        //readonly Dictionary<string, string> iStructNativeToManagedMappings;
-        //readonly Dictionary<string, string> iHandleNativeToManagedMappings;
         public RefArgumentTransformer(
             IEnumerable<KeyValuePair<string, string>> aEnumNativeToManagedMappings
-            //IEnumerable<KeyValuePair<string, string>> aStructNativeToManagedMappings,
-            //IEnumerable<KeyValuePair<string, string>> aHandleNativeToManagedMappings
             )
         {
             iEnumNativeToManagedMappings = aEnumNativeToManagedMappings.ToDictionary(x => x.Key, x => x.Value);
-            //iStructNativeToManagedMappings = aStructNativeToManagedMappings.ToDictionary(x => x.Key, x => x.Value);
-            //iHandleNativeToManagedMappings = aHandleNativeToManagedMappings.ToDictionary(x => x.Key, x => x.Value);
         }
 
         public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
@@ -590,10 +535,6 @@ namespace ManagedApiBuilder
             aAssembler.AddPInvokeParameter(pinvokeArgType, aNativeFunction.CurrentParameter.Name, "ref @" + aNativeFunction.CurrentParameter.Name);
             aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, managedArgType);
             aNativeFunction.ConsumeArgument();
-            //if (suppressManaged)
-            //{
-            //    aAssembler.SuppressManagedWrapper();
-            //}
             return true;
         }
     }
@@ -677,11 +618,6 @@ namespace ManagedApiBuilder
             {
                 return false;
             }
-
-            //aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name + "._handle");
-            //aAssembler.AddManagedParameter(aNativeFunction.CurrentParameter.Name, new CSharpType(className));
-            //aNativeFunction.ConsumeArgument();
-
 
             aAssembler.InsertAtTop("IntPtr returnValue;");
             aAssembler.SetPInvokeReturn(new CSharpType("IntPtr"), "returnValue");
@@ -781,15 +717,6 @@ namespace ManagedApiBuilder
             if (namedType == null) return false;
 
             // Accept anything.
-            /*
-            switch (namedType.Name)
-            {
-                case "byte":
-                case "void":
-                    break;
-                default:
-                    return false;
-            }*/
 
             aAssembler.AddPInvokeParameter(new CSharpType("IntPtr"), aNativeFunction.CurrentParameter.Name, null);
             aAssembler.SuppressManagedWrapper();
