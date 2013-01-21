@@ -9,7 +9,7 @@ using ApiParser;
 
 namespace ManagedApiBuilder
 {
-    interface IFunctionAssembler
+    public interface IFunctionAssembler
     {
         void AddPInvokeParameter(CSharpType aType, string aPInvokeName, string aExpression);
         void SetPInvokeReturn(CSharpType aType, string aVariableName);

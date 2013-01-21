@@ -68,6 +68,7 @@
     <Compile Include="ArgumentTransformers\UnknownLengthStringReturnTransformer.cs" />
     <Compile Include="ArgumentTransformers\VoidReturnTransformer.cs" />
     <Compile Include="ArgumentTransformers\VoidStarArgumentTransformer.cs" />
+    <Compile Include="CSharpType.cs" />
     <Compile Include="IArgumentTransformer.cs" />
     <Compile Include="CategorizedDeclarations.cs" />
     <Compile Include="CSharpGenerator.cs" />

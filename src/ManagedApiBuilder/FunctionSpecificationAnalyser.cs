@@ -7,7 +7,7 @@ using ApiParser;
 
 namespace ManagedApiBuilder
 {
-    interface IFunctionSpecificationAnalyser
+    public interface IFunctionSpecificationAnalyser
     {
         int CurrentParameterIndex { get; }
         Declaration CurrentParameter { get; }

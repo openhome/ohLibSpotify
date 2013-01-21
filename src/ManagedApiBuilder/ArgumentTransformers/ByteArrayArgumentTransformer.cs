@@ -2,7 +2,7 @@
 
 namespace ManagedApiBuilder.ArgumentTransformers
 {
-    class ByteArrayArgumentTransformer : IArgumentTransformer
+    public class ByteArrayArgumentTransformer : IArgumentTransformer
     {
         public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
         {
