@@ -12,20 +12,6 @@ namespace ManagedApiBuilder
 {
     class CSharpGenerator
     {
-        /*const string FunctionDeclarationTemplate =
-            "{0}[DllImport(\"spotify\")]\n" +
-            "{0}{1}{2} {3}({4});\n";
-        const string DllImportModifiers = "internal static extern ";
-        const string RawDelegateModifiers = "internal delegate ";*/
-        /*
-        const string DllImportTemplate =
-            "{0}[DllImport(\"libspotify\")]\n" +
-            "{4}" +
-            "{0}internal static extern {1} {2}({3});\n";
-        const string RawDelegateTemplate =
-            "{4}" +
-            "{0}internal delegate {1} {2}({3});\n";*/
-
         HashSet<string> iEnumNames;
         HashSet<string> iStructNames;
         HashSet<string> iHandleNames;
@@ -62,7 +48,6 @@ namespace ManagedApiBuilder
                 return enumConfig.ManagedName ?? aNativeTypeName;
             }
             // Delegate??
-            // Handle??
             if (iEnumNames.Contains(aNativeTypeName))
             {
                 return DefaultManagedEnumName(aNativeTypeName);
@@ -73,32 +58,6 @@ namespace ManagedApiBuilder
             }
             return aNativeTypeName;
         }
-
-        /*class PinvokeArgumentMapping
-        {
-            public Declaration NativeArgument { get; private set;}
-            public string PinvokeName { get; private set; }
-            public CSharpType PinvokeType { get; private set; }
-            public PinvokeArgumentMapping(Declaration aNativeArgument, string aPinvokeName, CSharpType aPinvokeType)
-            {
-                NativeArgument = aNativeArgument;
-                PinvokeName = aPinvokeName;
-                PinvokeType = aPinvokeType;
-            }
-        }*/
-
-        /*class ManagedArgumentMapping
-        {
-            public List<PinvokeArgumentMapping> NativeArguments { get; private set; }
-            public string ManagedName { get; private set; }
-            public CSharpType ManagedType { get; private set; }
-            public ManagedArgumentMapping(string aManagedName, CSharpType aManagedType, params PinvokeArgumentMapping[] aPinvokeMappings)
-            {
-                ManagedName = aManagedName;
-                ManagedType = aManagedType;
-                NativeArguments = aPinvokeMappings.ToList();
-            }
-        }*/
 
         CSharpType GetCSharpMarshalType(CType aType, string aName, bool aAsParameter)
         {
@@ -111,7 +70,6 @@ namespace ManagedApiBuilder
                 if (functionType != null)
                 {
                     // Delegate
-                    // TODO: Derive delegate name from declaration name?
                     return new CSharpType(aName);
                 }
                 if (!aAsParameter)
@@ -183,8 +141,6 @@ namespace ManagedApiBuilder
 
         public string GenerateDllImportFunction(string aIndent, string aFunctionName, FunctionCType aFunctionType)
         {
-            /*string oldResult = GenerateFunctionDeclaration(
-                aIndent, DllImportTemplate, aFunctionName, aFunctionType);*/
             var assembler = AssembleFunction(aFunctionName, aFunctionType, null, null);
             if (assembler == null)
             {
@@ -196,8 +152,6 @@ namespace ManagedApiBuilder
 
         public string GenerateRawDelegate(string aIndent, string aFunctionName, FunctionCType aFunctionType)
         {
-            //string oldResult = GenerateFunctionDeclaration(
-            //    aIndent, RawDelegateTemplate, aFunctionName, aFunctionType);
             var assembler = AssembleFunction(aFunctionName, aFunctionType, null, null);
             if (assembler == null)
             {
@@ -205,26 +159,6 @@ namespace ManagedApiBuilder
             }
             return assembler.GenerateNativeDelegateDeclaration(aIndent).Replace("\n", Environment.NewLine);
         }
-
-        /*string GenerateFunctionDeclaration(string aIndent, string aTemplate, string aFunctionName, FunctionCType aFunctionType)
-        {
-            string argString;
-            if (aFunctionType.Arguments.Count == 1 && aFunctionType.Arguments[0].CType.ToString() == "void")
-            {
-                argString = "";
-            }
-            else
-            {
-                var args = aFunctionType.Arguments.Select(x => GetCSharpMarshalType(x.CType, x.Name, true).CreateParameterDeclaration(x.Name));
-                argString = String.Join(", ", args.ToArray());
-            }
-            var returnType = GetCSharpMarshalType(aFunctionType.ReturnType, "", false);
-            var returnAttribute = returnType.CreateReturnTypeAttribute();
-            if (returnAttribute != "")
-                returnAttribute = aIndent + returnAttribute + "\n";
-            var returnTypeDeclaration = returnType.CreateReturnTypeDeclaration();
-            return String.Format(aTemplate, aIndent, returnTypeDeclaration, aFunctionName, argString, returnAttribute); //.Replace("\n", Environment.NewLine);
-        }*/
 
         static IEnumerable<string> SplitName(string aName)
         {
@@ -235,7 +169,6 @@ namespace ManagedApiBuilder
         {
             if (aFragment.Length == 0)
                 return "";
-            //Console.WriteLine("PascalCase:[{0}]", aFragment);
             return aFragment.Substring(0, 1).ToUpperInvariant() + aFragment.Substring(1).ToLowerInvariant();
         }
 
@@ -244,18 +177,8 @@ namespace ManagedApiBuilder
             return String.Join("", aFragments.Select(PascalCase));
         }
 
-        /*string CamelCase(IEnumerable<string> aFragments)
-        {
-            var fragments = aFragments.ToList();
-            var first = fragments[0].ToLowerInvariant();
-            var remaining = fragments.Skip(1).Select(PascalCase);
-            return first + String.Join("", remaining);
-        }*/
-
         static string PascalCaseMemberName(string aMemberName)
         {
-            //if (!aMemberName.ToUpperInvariant().StartsWith(aParentName.ToUpperInvariant() + "_")) throw new Exception("Bad member name: " + aMemberName);
-            //string trimmedName = aMemberName.Substring(aParentName.Length + 1);
             string trimmedName = aMemberName;
             return PascalCase(SplitName(trimmedName));
         }
@@ -298,7 +221,7 @@ namespace ManagedApiBuilder
 
         FunctionAssembler AssembleFunction(string aFunctionName, FunctionCType aFunctionType, string aHandleName, string aMethodName)
         {
-            var enumNames = iEnumNames.ToDictionary(x => x, ManagedNameForNativeType); // iEnumConfigurations.Values.ToDictionary(x => x.NativeName, x => x.ManagedName);
+            var enumNames = iEnumNames.ToDictionary(x => x, ManagedNameForNativeType);
             var structNames = iStructNames.ToDictionary(x => x, ManagedNameForNativeType);
             var classNames = iHandleNames.ToDictionary(x => x, ManagedNameForNativeType);
             var delegateNames = iDelegateNames.ToDictionary(x => x, ManagedNameForNativeType);
@@ -359,7 +282,7 @@ namespace ManagedApiBuilder
                 if (transformer == null)
                 {
                     //Console.WriteLine("/* FAILED AT ARG {0} */", nativeFunction.CurrentParameter != null ? nativeFunction.CurrentParameter.Name : "none");
-                    return null; //aIndent + String.Format("// Skipped function '{0}'.\n", aFunctionName);
+                    return null;
                 }
                 assembler.NextArgument();
             }
@@ -375,52 +298,12 @@ namespace ManagedApiBuilder
             var methodName = PascalCase(SplitName(aFunctionName.Substring(aHandleName.Length+1)));
             var assembler = AssembleFunction(aFunctionName, aFunctionType, aHandleName, methodName);
 
-            /*
-             * //var enumNames = new Dictionary<string, string> { { "sp_error", "SpotifyError" } }; // FIXME
-            var enumNames = iEnumNames.ToDictionary(x => x, ManagedNameForNativeType); // iEnumConfigurations.Values.ToDictionary(x => x.NativeName, x => x.ManagedName);
-            var classNames = iHandleNames.ToDictionary(x => x, ManagedNameForNativeType);
-
-            var transformers = new List<IArgumentTransformer>{
-                new ThisPointerArgumentTransformer{HandleType = aHandleName},
-                new HandleArgumentTransformer(classNames),
-                new SpotifyErrorReturnTransformer(),
-                new StringReturnTransformer(),
-                new UnknownLengthStringReturnTransformer(),
-                new StringArgumentTransformer(),
-                new TrivialArgumentTransformer(enumNames),
-                new RefArgumentTransformer(enumNames),
-                new TrivialReturnTransformer(enumNames),
-                new HandleReturnTransformer(classNames),
-                new SimpleStringReturnTransformer(),
-                new VoidReturnTransformer()};
-            //Declaration arg1 = new Declaration { Name = "inputString", Kind = "instance", CType = new PointerCType(new NamedCType("char")) };
-            //Declaration arg2 = new Declaration { Name = "flag1", Kind = "instance", CType = new NamedCType("bool") };
-            //Declaration arg3 = new Declaration { Name = "ptrToInt", Kind = "instance", CType = new PointerCType(new NamedCType("int")) };
-            //Console.WriteLine(stringTransformer.CanApply(arg1, null, null));
-            //Declaration arg4 = new Declaration { Name = "outputString", Kind = "instance", CType = new PointerCType(new NamedCType("char")) };
-            //Declaration arg5 = new Declaration { Name = "bufferLength", Kind = "instance", CType = new NamedCType("size_t") };
-            //CType retType = new NamedCType("int");
-            //List<Declaration> arguments = new List<Declaration> { arg1, arg2, arg3, arg4, arg5 };
-            var assembler = new FunctionAssembler(aFunctionName, methodName);
-            var nativeFunction = new FunctionSpecificationAnalyser(aFunctionType.Arguments, aFunctionType.ReturnType);
-            while (nativeFunction.CurrentParameter != null || nativeFunction.ReturnType != null)
-            {
-                var transformer = transformers.FirstOrDefault(x=>x.Apply(nativeFunction, assembler));
-                if (transformer == null)
-                {
-                    return aIndent + String.Format("// Skipped function '{0}'.\n", aFunctionName);
-                }
-                assembler.NextArgument();
-            }*/
-
             if (assembler == null)
             {
                 return aIndent + String.Format("// Skipped function '{0}'.\n", aFunctionName);
             }
 
             return assembler.GenerateWrapperMethod(aIndent);
-
-            //return "";
         }
 
         const string EnumTemplate =
@@ -440,7 +323,6 @@ namespace ManagedApiBuilder
                 throw new Exception(String.Format("Expected '{0}' to start with '{1}'.", aString, aPrefix));
             }
             var retval = aString.Substring(aPrefix.Length);
-            //Console.WriteLine("DropPrefix([{0}], [{1}]) -> {2}", aString, aPrefix, retval);
             return retval;
         }
 
