@@ -46,11 +46,34 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArgumentTransformers\ByteArrayArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\CallbackStructArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\FunctionPointerArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\HandleArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\HandleArrayArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\HandleReturnTransformer.cs" />
+    <Compile Include="ArgumentTransformers\PointerArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\PointerReturnTransformer.cs" />
+    <Compile Include="ArgumentTransformers\RefArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\RefHandleArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\RefStructArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\SimpleStringReturnTransformer.cs" />
+    <Compile Include="ArgumentTransformers\SpotifyErrorReturnTransformer.cs" />
+    <Compile Include="ArgumentTransformers\StringArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\StringReturnTransformer.cs" />
+    <Compile Include="ArgumentTransformers\ThisPointerArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\TrivialArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\TrivialArrayArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\TrivialReturnTransformer.cs" />
+    <Compile Include="ArgumentTransformers\UnknownLengthStringReturnTransformer.cs" />
+    <Compile Include="ArgumentTransformers\VoidReturnTransformer.cs" />
+    <Compile Include="ArgumentTransformers\VoidStarArgumentTransformer.cs" />
+    <Compile Include="IArgumentTransformer.cs" />
     <Compile Include="CategorizedDeclarations.cs" />
     <Compile Include="CSharpGenerator.cs" />
     <Compile Include="FunctionAssembler.cs" />
     <Compile Include="FunctionSpecificationAnalyser.cs" />
-    <Compile Include="IArgumentTransformer.cs" />
+    <Compile Include="ArgumentTransformers\VoidArgumentListTransformer.cs" />
     <Compile Include="OrderedDictionary.cs" />
     <Compile Include="PatternMatching.cs" />
     <Compile Include="Program.cs" />
