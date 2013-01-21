@@ -10,7 +10,7 @@ using ApiParser;
 namespace ManagedApiBuilder
 {
 
-    static class Matcher
+    public static class Matcher
     {
         public static PatternMatcher<CType, CType> CType(CType aItem)
         {
@@ -18,7 +18,7 @@ namespace ManagedApiBuilder
         }
     }
 
-    interface IPatternTreeWalker<TPatternNode, TTreeNode>
+    public interface IPatternTreeWalker<TPatternNode, TTreeNode>
     {
         /// <summary>
         /// Get the children of a node in the pattern we're using to match.
@@ -204,11 +204,25 @@ namespace ManagedApiBuilder
                     return false;
                 }
             }
+            ArrayCType arrayPatternType = aPatternNode as ArrayCType;
+            ArrayCType arrayTreeType = aTreeNode as ArrayCType;
+            if (arrayPatternType != null)
+            {
+                Debug.Assert(arrayTreeType != null);
+                if (arrayPatternType.Dimension != arrayTreeType.Dimension)
+                {
+                    return false;
+                }
+            }
+            if (!aPatternNode.Qualifiers.SetEquals(aTreeNode.Qualifiers))
+            {
+                return false;
+            }
             return true;
         }
     }
 
-    class CTypeFactory
+    public class CTypeFactory
     {
         public CType Ptr(CType aBaseType) { return new PointerCType(aBaseType); }
         public CType Type(string aTypeName) { return new NamedCType(aTypeName); }
@@ -219,7 +233,7 @@ namespace ManagedApiBuilder
         public CType Tuple(params CType[] aItems) { return new TupleCType(aItems); }
     }
 
-    static class ExtensionMethods
+    public static class ExtensionMethods
     {
         public static PatternMatcher<CType, CType> MatchToPattern(this CType aCType, CType aPattern)
         {
@@ -229,7 +243,7 @@ namespace ManagedApiBuilder
         }
     }
 
-    class PatternMatcher<TPatternNode, TTreeNode>
+    public class PatternMatcher<TPatternNode, TTreeNode>
     {
         readonly IPatternTreeWalker<TPatternNode, TTreeNode> iWalker;
         TTreeNode Value { get; set; }

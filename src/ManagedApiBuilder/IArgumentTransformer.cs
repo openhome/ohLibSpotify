@@ -342,7 +342,7 @@ namespace ManagedApiBuilder
         public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
         {
             var matcher = Matcher.CType(aNativeFunction.CurrentParameterType);
-            if (!matcher.Match(new PointerCType(new NamedCType("char"))))
+            if (!matcher.Match(new PointerCType(new NamedCType("char") { Qualifiers = { "const" } })))
             {
                 return false;
             }
@@ -369,17 +369,29 @@ namespace ManagedApiBuilder
         }
         public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
         {
-            var matcher = Matcher.CType(new TupleCType(
-                aNativeFunction.CurrentParameterType,
-                aNativeFunction.NextParameterType));
-            if (!matcher.Match(new TupleCType(
-                new PointerCType(new PointerCType(new VariableCType("handle-type"))),
-                new NamedCType("int"))))
-            {
-                return false;
-            }
-            var elementType = matcher.BoundVariables["handle-type"] as NamedCType;
-            if (elementType == null) { return false; }
+            //var matcher = Matcher.CType(new TupleCType(
+            //    aNativeFunction.CurrentParameterType,
+            //    aNativeFunction.NextParameterType));
+
+            var firstArgType = aNativeFunction.CurrentParameterType;
+            var secondArgType = aNativeFunction.NextParameterType;
+            bool secondArgIsInt = secondArgType.MatchToPattern(new NamedCType("int")).IsMatch;
+            if (!secondArgIsInt) { return false; }
+
+            bool firstArgIsPointer = firstArgType is PointerCType;
+            if (!firstArgIsPointer) { return false; }
+            var derefOnceType = firstArgType.ChildType;
+
+            bool firstArgIsPointerToPointer = derefOnceType is PointerCType;
+            if (!firstArgIsPointerToPointer) { return false; }
+            var derefTwiceType = derefOnceType.ChildType;
+
+            bool firstArgIsPointerToPointerToNamedType =  derefTwiceType is NamedCType;
+            if (!firstArgIsPointerToPointerToNamedType) { return false; }
+            var elementType = (NamedCType)derefTwiceType;
+
+            bool arrayIsMutable = !derefOnceType.Qualifiers.Contains("const");
+
             string arg1name = aNativeFunction.CurrentParameter.Name;
             string arg2name = aNativeFunction.NextParameter.Name;
             if (arg2name != "num_" + arg1name) { return false; }
@@ -405,7 +417,12 @@ namespace ManagedApiBuilder
             aAssembler.InsertBeforeCall("using (var array_" + paramName + " = SpotifyMarshalling.ArrayToNativeArray(" + paramName + ", x=>x._handle))");
             aAssembler.InsertBeforeCall("{");
             aAssembler.IncreaseIndent();
-            aAssembler.InsertAfterCall(     "array_"+paramName+".CopyTo("+paramName+", ptr => ptr == IntPtr.Zero ? null : new "+className+"(ptr));");
+            if (arrayIsMutable)
+            {
+                // Unless we pass in a 'handle * const *', the function might have changed
+                // the content of the array, so copy it back.
+                aAssembler.InsertAfterCall("array_" + paramName + ".CopyTo(" + paramName + ", ptr => ptr == IntPtr.Zero ? null : new " + className + "(ptr));");
+            }
             aAssembler.DecreaseIndent();
             aAssembler.InsertAfterCall( "}");
 
@@ -693,7 +710,7 @@ namespace ManagedApiBuilder
         public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aFunctionAssembler)
         {
             if (aNativeFunction.CurrentParameter != null) { return false; }
-            if (!aNativeFunction.ReturnType.MatchToPattern(new PointerCType(new NamedCType("char"))).IsMatch)
+            if (!aNativeFunction.ReturnType.MatchToPattern(new PointerCType(new NamedCType("char") { Qualifiers = { "const" } })).IsMatch)
             {
                 return false;
             }
