@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using ApiParser;
 
 namespace ManagedApiBuilder
 {
@@ -25,7 +24,7 @@ namespace ManagedApiBuilder
         void DecreaseIndent();
         bool IsStatic { get; set; }
     }
-    class FunctionAssembler : IFunctionAssembler
+    public class FunctionAssembler : IFunctionAssembler
     {
         int iIndentLevelAbove = 0;
         int iIndentLevelBelow = 0;
@@ -34,31 +33,26 @@ namespace ManagedApiBuilder
         /// <summary>
         /// The C# type of each native argument.
         /// </summary>
-        List<KeyValuePair<string, CSharpType>> iPInvokeArguments = new List<KeyValuePair<string, CSharpType>>();
+        readonly List<KeyValuePair<string, CSharpType>> iPInvokeArguments = new List<KeyValuePair<string, CSharpType>>();
         /// <summary>
         /// The actual text of the C# expressions to use for each
         /// argument to the native function.
         /// </summary>
-        List<string> iArgumentExpressions = new List<string>();
-        List<KeyValuePair<string, CSharpType>> iManagedArguments = new List<KeyValuePair<string, CSharpType>>();
-        List<string> iTopCode = new List<string>();
-        List<List<string>> iBottomCode = new List<List<string>> { new List<string>() };
-        List<string> iAboveCode = new List<string>();
-        List<List<string>> iBelowCode = new List<List<string>> { new List<string>() };
+        readonly List<string> iArgumentExpressions = new List<string>();
+
+        readonly List<KeyValuePair<string, CSharpType>> iManagedArguments = new List<KeyValuePair<string, CSharpType>>();
+        readonly List<string> iTopCode = new List<string>();
+        readonly List<List<string>> iBottomCode = new List<List<string>> { new List<string>() };
+        readonly List<string> iAboveCode = new List<string>();
+        readonly List<List<string>> iBelowCode = new List<List<string>> { new List<string>() };
         public string NativeFunctionName { get; set; }
         public string ManagedFunctionName { get; set; }
         CSharpType iManagedReturnType = new CSharpType("void");
-        public bool HasReturnType { get { return iManagedReturnType != null; } }
         public bool IsStatic { get; set; }
         public bool HasManagedWrapper { get; set; }
-        //public List<Declaration> RemainingArguments { get; private set; }
-        //public Declaration CurrentNativeArg { get { return RemainingArguments.FirstOrDefault(); } }
-        //public Declaration NextNativeArg { get { return RemainingArguments.Skip(1).FirstOrDefault(); } }
-        
 
         public FunctionAssembler(string aNativeFunctionName, string aManagedFunctionName)
         {
-            //RemainingArguments = aRemainingArguments;
             NativeFunctionName = aNativeFunctionName;
             ManagedFunctionName = aManagedFunctionName;
             IsStatic = true;
@@ -67,7 +61,6 @@ namespace ManagedApiBuilder
 
         public void AddPInvokeParameter(CSharpType aType, string aPInvokeName, string aExpression)
         {
-            //Declaration arg = RemainingArguments[0];
             iPInvokeArguments.Add(new KeyValuePair<string, CSharpType>(aPInvokeName, aType));
             iArgumentExpressions.Add(aExpression);
         }
@@ -139,11 +132,6 @@ namespace ManagedApiBuilder
         public void DecreaseIndent()
         {
             iIndentLevelBelow -= 1;
-        }
-
-        public string GeneratePInvokeDeclaration()
-        {
-            throw new NotImplementedException();
         }
 
         public string GenerateWrapperMethod(string aIndent)
