@@ -10,14 +10,14 @@ using ManagedApiBuilder.ArgumentTransformers;
 
 namespace ManagedApiBuilder
 {
-    class CSharpGenerator
+    public class CSharpGenerator
     {
-        HashSet<string> iEnumNames;
-        HashSet<string> iStructNames;
-        HashSet<string> iHandleNames;
-        HashSet<string> iDelegateNames;
-        Dictionary<string, ApiStructConfiguration> iStructConfigurations;
-        Dictionary<string, ApiEnumConfiguration> iEnumConfigurations;
+        readonly HashSet<string> iEnumNames;
+        readonly HashSet<string> iStructNames;
+        readonly HashSet<string> iHandleNames;
+        readonly HashSet<string> iDelegateNames;
+        readonly Dictionary<string, ApiStructConfiguration> iStructConfigurations;
+        readonly Dictionary<string, ApiEnumConfiguration> iEnumConfigurations;
 
         public CSharpGenerator(
             IEnumerable<string> aEnumNames,

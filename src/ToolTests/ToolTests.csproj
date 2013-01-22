@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CSharpGeneratorTests.cs" />
     <Compile Include="FunctionAssemblerTests.cs" />
     <Compile Include="LexerTests.cs" />
     <Compile Include="ParserTests.cs" />
