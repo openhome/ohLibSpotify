@@ -32,13 +32,13 @@ namespace ToolTests
                         new ApiEnumConfiguration{
                             NativeName = "sp_speed",
                             ManagedName = "SpotifySpeed",
-                            NativeConstantPrefix = "sp_speed",
+                            NativeConstantPrefix = "SP_SPEED_",
                             ManagedConstantPrefix = "_"
                         },
                         new ApiEnumConfiguration{
                             NativeName = "sp_flavor",
                             ManagedName = "Flavor",
-                            NativeConstantPrefix = "sp_flavor",
+                            NativeConstantPrefix = "SP_FLAVOR_",
                             ManagedConstantPrefix = ""
                         },
                     }
@@ -140,6 +140,56 @@ namespace ToolTests
             Func<string, string> esc = x=>x.Replace(".", "\\.").Replace("(", "\\(").Replace(")", "\\)").Replace("[", "\\[").Replace("]","\\]");
             Assert.That(iResult, Is.StringMatching(
                 "(?s)" + anything + esc("[MarshalAs(UnmanagedType.I1)]") + @"\s*" + "public bool @lit;" + anything));
+        }
+    }
+    public class WhenGeneratingAnEnumWithSomeConstants : CSharpGeneratorContext
+    {
+        protected string iResult;
+
+        [SetUp]
+        public void GenerateStruct()
+        {
+            iResult = iGenerator.GenerateEnumDeclaration("", "sp_flavor",
+                new EnumCType("flavor_tag")
+                {
+                    Constants = {
+                        new EnumConstant{Name="SP_FLAVOR_MINT", Value=6},
+                        new EnumConstant{Name="SP_FLAVOR_STRAWBERRY_AND_ONION", Value=34},
+                        new EnumConstant{Name="SP_FLAVOR_BURNT_POTATO", Value=77},
+                        new EnumConstant{Name="SP_FLAVOR_TARMAC", Value=4},
+                    }
+                });
+        }
+
+        [Test]
+        public void TheEnumShouldBePublic()
+        {
+            Assert.That(iResult, Is.StringMatching(@"(?s)\s*public.*"));
+        }
+
+        [Test]
+        public void TheEnumShouldHaveTheCorrectFlavor()
+        {
+            Assert.That(iResult, Is.StringMatching(@"(?s)\s*public.*"));
+        }
+
+        [Test]
+        public void TheEnumShouldHaveTheConstantsInOrder()
+        {
+            Assert.That(iResult, Is.StringMatching(@"(?s).*\{.*Mint.*StrawberryAndOnion.*BurntPotato.*Tarmac.*\}"));
+        }
+
+        [TestCase("Mint", "6")]
+        [TestCase("StrawberryAndOnion", "34")]
+        [TestCase("BurntPotato", "77")]
+        [TestCase("Tarmac", "4")]
+        public void TheEnumShouldHaveTheCorrectConstantValues(string aName, string aValue)
+        {
+            const string singleLineMode = "(?s)";
+            const string sp = @"\s*";
+            const string any = @"\.*";
+            Action<string> chk = s => Assert.That(iResult, Is.StringMatching(s));
+            chk(singleLineMode + @".*" + aName + sp + "=" + sp + aValue +  sp + "," + any);
         }
     }
 }
