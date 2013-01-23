@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using ApiParser;
 using ManagedApiBuilder;
 using Moq;
@@ -239,7 +238,7 @@ namespace ToolTests
         //                }
         //            },
 
-        TestCase[] GetTestData()
+        IEnumerable<TestCase> GetTestData()
         {
             var data = new []{
                 new TestCase{
