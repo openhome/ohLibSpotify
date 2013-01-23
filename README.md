@@ -39,7 +39,8 @@ Now you can run the demo console app:
 
     build/bin/Release/SpShellSharp.exe
 
-For more details, see doc/development.md
+For more details about building ohLibSpotify, see doc/development.md
+For more details about using ohLibSpotify, see doc/usage.md
 
 ## Other platforms
 
