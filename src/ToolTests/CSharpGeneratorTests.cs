@@ -201,18 +201,23 @@ namespace ToolTests
         }
     }
 
-    public class ClassGenerationTestContext : CSharpGeneratorContext
+    public class ClassGenerationTests : CSharpGeneratorContext
     {
         public CType Void { get { return new NamedCType("void"); } }
         public CType Int { get { return new NamedCType("int"); } }
         public CType Byte { get { return new NamedCType("byte"); } }
         public CType SizeT { get { return new NamedCType("size_t"); } }
         public CType Char { get { return new NamedCType("char"); } }
+        public CType Bool { get { return new NamedCType("bool"); } }
+        public CType SpUint64 { get { return new NamedCType("sp_uint64"); } }
         public CType ConstChar { get { return new NamedCType("char"){Qualifiers={"const"}}; } }
         public CType VoidPtr { get { return new PointerCType(Void); } }
         public CType IntPtr { get { return new PointerCType(Int); } }
         public CType CharPtr { get { return new PointerCType(Char); } }
         public CType ConstCharPtr { get { return new PointerCType(ConstChar); } }
+        public CType BoolPtr { get { return new PointerCType(Bool); } }
+        public CType SizeTPtr { get { return new PointerCType(SizeT); } }
+        public CType SpUint64Ptr { get { return new PointerCType(SpUint64); } }
         public CType IntArray { get { return new ArrayCType(null, Int); } }
         public CType IntArrayFive { get { return new ArrayCType(5, Int); } }
         public CType IntArrayTen { get { return new ArrayCType(10, Int); } }
@@ -238,36 +243,7 @@ namespace ToolTests
         {
             var data = new []{
                 new TestCase{
-                    // void xxx(const char * alpha);
-                    NativeRet = Void,
-                    NativeArgs = { Decl("alpha", ConstCharPtr) },
-                    ManagedArgs = { new ArgInfo {Name="alpha", Type="string"} },
-                    PInvokeArgs = { new ArgInfo {Name="alpha", Type="IntPtr"} },
-                    ManagedRet = "void",
-                    PInvokeRet = "void",
-                },
-                new TestCase{
-                    // int xxx(char * buffer, size_t buffer_len);
-                    // Yes, we're testing with buffer_len as size_t but the return type int.
-                    // This is how sp_session_remembered_user is declared.
-                    NativeRet = Int,
-                    NativeArgs = { Decl("buffer", CharPtr), Decl("buffer_len", SizeT) },
-                    ManagedArgs = { },
-                    PInvokeArgs = { new ArgInfo {Name="buffer", Type="IntPtr"}, new ArgInfo{Name="buffer_len", Type="UIntPtr"} },
-                    ManagedRet = "string",
-                    PInvokeRet = "int",
-                },
-                new TestCase{
-                    // void xxx(const char * alpha);
-                    NativeRet = Void,
-                    NativeArgs = { Decl("alpha", ConstCharPtr) },
-                    ManagedArgs = { new ArgInfo {Name="alpha", Type="string"} },
-                    PInvokeArgs = { new ArgInfo {Name="alpha", Type="IntPtr"} },
-                    ManagedRet = "void",
-                    PInvokeRet = "void",
-                },
-                new TestCase{
-                    // void xxx(byte alpha[]);
+                    Name = "WhenMapping('void x(byte[])')",
                     // ByteArrayArgumentTransformer
                     NativeRet = Void,
                     NativeArgs = { Decl("alpha", ByteArray) },
@@ -276,6 +252,7 @@ namespace ToolTests
                     PInvokeRet = "void",
                 },
                 new TestCase{
+                    Name = "WhenMappingCallbackStruct",
                     // void xxx(sp_room_callbacks * callbacks);
                     // CallbackStructArgumentTransformer
                     NativeRet = Void,
@@ -285,6 +262,7 @@ namespace ToolTests
                     PInvokeRet = "void",
                 },
                 new TestCase{
+                    Name = "WhenMappingFunctionPointer",
                     // void xxx(sp_ready_cb * ready_callback);
                     // FunctionPointerArgumentTransformer
                     NativeRet = Void,
@@ -294,6 +272,7 @@ namespace ToolTests
                     PInvokeRet = "void",
                 },
                 new TestCase{
+                    Name = "WhenMappingHandleArgument",
                     // void xxx(sp_device * device);
                     // HandleArgumentTransformer
                     NativeRet = Void,
@@ -304,6 +283,7 @@ namespace ToolTests
                     PInvokeRet = "void",
                 },
                 new TestCase{
+                    Name = "WhenMapping('void x(handle **, int)')",
                     // void xxx(sp_device ** devices, int num_devices);
                     // HandleArrayArgumentTransformer
                     NativeRet = Void,
@@ -311,6 +291,280 @@ namespace ToolTests
                     ManagedArgs = { new ArgInfo {Name="devices", Type="Device[]"} },
                     PInvokeArgs = { new ArgInfo {Name="devices", Type="IntPtr"}, new ArgInfo {Name="num_devices", Type="int"} },
                     ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    Name = "WhenMapping('handle *x()')",
+                    // sp_device * xxx();
+                    // HandleReturnTransformer
+                    NativeRet = new PointerCType(new NamedCType("sp_device")),
+                    NativeArgs = { },
+                    ManagedArgs = { },
+                    PInvokeArgs = { },
+                    ManagedRet = "Device",
+                    PInvokeRet = "IntPtr",
+                },
+                new TestCase{
+                    // void xxx(int * alpha)
+                    // RefArgumentTransformer
+                    Name = "WhenMapping('void x(int *)')",
+                    NativeRet = Void,
+                    NativeArgs = { Decl("alpha", IntPtr ) },
+                    ManagedArgs = { new ArgInfo {Name="alpha", Type="ref int"} },
+                    PInvokeArgs = { new ArgInfo {Name="alpha", Type="ref int"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(bool * beta)
+                    // RefArgumentTransformer
+                    Name = "WhenMapping('void x(bool *)')",
+                    NativeRet = Void,
+                    NativeArgs = { Decl("beta", BoolPtr ) },
+                    ManagedArgs = { new ArgInfo {Name="beta", Type="ref bool"} },
+                    PInvokeArgs = { new ArgInfo {Name="beta", Type="[MarshalAs(UnmanagedType.I1)]ref bool"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(size_t * gamma)
+                    // RefArgumentTransformer
+                    Name = "WhenMapping('void x(size_t *)')",
+                    NativeRet = Void,
+                    NativeArgs = { Decl("gamma", SizeTPtr ) },
+                    ManagedArgs = { new ArgInfo {Name="gamma", Type="ref UIntPtr"} },
+                    PInvokeArgs = { new ArgInfo {Name="gamma", Type="ref UIntPtr"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    Name = "WhenMapping('void x(sp_uint64 *)')",
+                    // void xxx(sp_uint64 * delta)
+                    // RefArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("delta", SpUint64Ptr ) },
+                    ManagedArgs = { new ArgInfo {Name="delta", Type="ref ulong"} },
+                    PInvokeArgs = { new ArgInfo {Name="delta", Type="ref ulong"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    Name = "WhenMappingRefEnum",
+                    // void xxx(sp_flavor * epsilon)
+                    // RefArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("epsilon", new PointerCType(new NamedCType("sp_flavor"))) },
+                    ManagedArgs = { new ArgInfo {Name="epsilon", Type="ref Flavor"} },
+                    PInvokeArgs = { new ArgInfo {Name="epsilon", Type="ref Flavor"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    Name = "WhenMappingRefHandle",
+                    // void xxx(sp_device ** device)
+                    // RefHandleArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("device", new PointerCType(new PointerCType(new NamedCType("sp_device")))) },
+                    Suppressed = true,
+                    PInvokeArgs = { new ArgInfo {Name="device", Type="ref IntPtr"} },
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    Name = "WhenMappingRefStruct",
+                    // void xxx(sp_room * room)
+                    // RefStructTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("room", new PointerCType(new NamedCType("sp_room"))) },
+                    PInvokeArgs = { new ArgInfo {Name="room", Type="ref sp_room"} },
+                    Suppressed = true, // There are few enough such functions that we write them by hand.
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    Name = "WhenMapping('const char * x()')",
+                    // SimpleStringReturnTransformer
+                    NativeRet = ConstCharPtr,
+                    NativeArgs = { },
+                    ManagedArgs = { },
+                    ManagedRet = "string",
+                    PInvokeArgs = { },
+                    PInvokeRet = "IntPtr",
+                },
+                new TestCase{
+                    Name = "WhenMapping('sp_error x()')",
+                    // SpotifyErrorReturnTransformer
+                    NativeRet = new NamedCType("sp_error"),
+                    NativeArgs = { },
+                    ManagedArgs = { },
+                    ManagedRet = "void",
+                    PInvokeArgs = { },
+                    PInvokeRet = "SpotifyError", // Note that in the overrides we explicitly renamed sp_error to SpotifyError.
+                },
+                new TestCase{
+                    Name = "WhenMapping('void x(const char *)')",
+                    // StringArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("alpha", ConstCharPtr) },
+                    ManagedArgs = { new ArgInfo {Name="alpha", Type="string"} },
+                    PInvokeArgs = { new ArgInfo {Name="alpha", Type="IntPtr"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    Name = "WhenMapping('int x(char *, size_t)')",
+                    // StringReturnTransformer
+                    // Yes, we're testing with buffer_len as size_t but the return type int.
+                    // This is how sp_session_remembered_user is declared.
+                    NativeRet = Int,
+                    NativeArgs = { Decl("buffer", CharPtr), Decl("buffer_len", SizeT) },
+                    ManagedArgs = { },
+                    PInvokeArgs = { new ArgInfo {Name="buffer", Type="IntPtr"}, new ArgInfo{Name="buffer_len", Type="UIntPtr"} },
+                    ManagedRet = "string",
+                    PInvokeRet = "int",
+                },
+                new TestCase{
+                    Name = "WhenMappingThisPointer",
+                    // void xxx(sp_file * file);
+                    // ThisPointerArgumentTransformer
+                    // (Note: all the methods we generate during these tests are on the 'File'
+                    // class. Most don't start with an sp_file * argument, so they are generated
+                    // as static methods. This one should generate as an instance method.)
+                    // TODO: Assert that the generator sets IsStatic=false
+                    NativeRet = Void,
+                    NativeArgs = { Decl("file", new PointerCType(new NamedCType("sp_file"))) },
+                    ManagedArgs = { },
+                    PInvokeArgs = { new ArgInfo {Name="file", Type="IntPtr"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(int alpha)
+                    // TrivialArgumentTransformer
+                    Name = "WhenMapping('void x(int)')",
+                    NativeRet = Void,
+                    NativeArgs = { Decl("alpha", Int ) },
+                    ManagedArgs = { new ArgInfo {Name="alpha", Type="int"} },
+                    PInvokeArgs = { new ArgInfo {Name="alpha", Type="int"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(bool beta)
+                    // TrivialArgumentTransformer
+                    Name = "WhenMapping('void x(bool)')",
+                    NativeRet = Void,
+                    NativeArgs = { Decl("beta", Bool ) },
+                    ManagedArgs = { new ArgInfo {Name="beta", Type="bool"} },
+                    PInvokeArgs = { new ArgInfo {Name="beta", Type="[MarshalAs(UnmanagedType.I1)]bool"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(size_t gamma)
+                    // TrivialArgumentTransformer
+                    Name = "WhenMapping('void x(size_t)')",
+                    NativeRet = Void,
+                    NativeArgs = { Decl("gamma", SizeT ) },
+                    ManagedArgs = { new ArgInfo {Name="gamma", Type="UIntPtr"} },
+                    PInvokeArgs = { new ArgInfo {Name="gamma", Type="UIntPtr"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    Name = "WhenMappingEnum",
+                    // void xxx(sp_flavor epsilon)
+                    // TrivialArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("epsilon", new NamedCType("sp_flavor")) },
+                    ManagedArgs = { new ArgInfo {Name="epsilon", Type="Flavor"} },
+                    PInvokeArgs = { new ArgInfo {Name="epsilon", Type="Flavor"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(int* alpha, int num_alpha)
+                    // TrivialArrayArgumentTransformer
+                    Name = "WhenMapping('void x(int *, int)')",
+                    NativeRet = Void,
+                    NativeArgs = { Decl("alpha", IntPtr ), Decl("num_alpha", Int) },
+                    ManagedArgs = { new ArgInfo {Name="alpha", Type="int[]"} },
+                    PInvokeArgs = { new ArgInfo {Name="alpha", Type="IntPtr"}, new ArgInfo {Name="num_alpha", Type="int"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // TrivialReturnTransformer
+                    Name = "WhenMapping('int x()')",
+                    NativeRet = Int,
+                    NativeArgs = {},
+                    ManagedArgs = {},
+                    PInvokeArgs = {},
+                    ManagedRet = "int",
+                    PInvokeRet = "int",
+                },
+                new TestCase{
+                    // TrivialReturnTransformer
+                    Name = "WhenMapping('bool x()')",
+                    NativeRet = Bool,
+                    NativeArgs = {},
+                    ManagedArgs = {},
+                    PInvokeArgs = {},
+                    ManagedRet = "bool",
+                    PInvokeRet = "[MarshalAs(UnmanagedType.I1)]bool",
+                },
+                new TestCase{
+                    Name = "WhenMapping('sp_uint64 x()')",
+                    // TrivialReturnTransformer
+                    NativeRet = SpUint64,
+                    NativeArgs = {},
+                    ManagedArgs = {},
+                    PInvokeArgs = {},
+                    ManagedRet = "ulong",
+                    PInvokeRet = "ulong",
+                },
+                new TestCase{
+                    Name = "WhenMappingEnumReturn",
+                    // sp_flavor xxx()
+                    // TrivialReturnTransformer
+                    NativeRet = new NamedCType("sp_flavor"),
+                    NativeArgs = {},
+                    ManagedArgs = {},
+                    PInvokeArgs = {},
+                    ManagedRet = "Flavor",
+                    PInvokeRet = "Flavor",
+                },
+                new TestCase{
+                    Name = "WhenMapping('void x(char *, int)')",
+                    // UnknownLengthStringReturnTransformer
+                    // Note: This transformation is very narrowly targeted to avoid
+                    // the risk of it misfiring. It only applies when the char* arg
+                    // is called 'buffer' and the int arg is called 'buffer_size'.
+                    NativeRet = Void,
+                    NativeArgs = { Decl("buffer", CharPtr), Decl("buffer_size", Int) },
+                    ManagedArgs = { },
+                    PInvokeArgs = { new ArgInfo {Name="buffer", Type="IntPtr"}, new ArgInfo{Name="buffer_size", Type="int"} },
+                    ManagedRet = "string",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    Name = "WhenMapping('void x(void)')",
+                    // VoidArgumentListTransformer
+                    // Note: This is only here because our parser is pretty simple
+                    // and doesn't know that (void) is C syntax for an empty
+                    // argument list.
+                    NativeRet = Void,
+                    NativeArgs = { Decl("", Void) },
+                    ManagedArgs = { },
+                    PInvokeArgs = {},
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    Name = "WhenMapping('void x(void *)')",
+                    // VoidStarArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("alpha", VoidPtr) },
+                    Suppressed = true,
+                    PInvokeArgs = { new ArgInfo {Name="alpha", Type="IntPtr"} },
                     PInvokeRet = "void",
                 },
             };
@@ -362,7 +616,7 @@ namespace ToolTests
         }
 
         [TestCaseSource("GenerateTestCases")]
-        public void RunTestCases(Action<ClassGenerationTestContext> aAction)
+        public void RunTestCases(Action<ClassGenerationTests> aAction)
         {
             aAction(this);
         }
@@ -389,7 +643,17 @@ namespace ToolTests
         void CheckManagedReturnType(CType aRetType, Declaration[] aParameters, string aExpectedReturnType)
         {
             GenerateClass(aRetType, aParameters);
-            iAssemblerMock.Verify(x => x.SetManagedReturn(It.Is<CSharpType>(y=>y.ToString()==aExpectedReturnType)));
+            if (aExpectedReturnType == "void")
+            {
+                // void is the default, so we won't actually need to have called SetManagedReturn.
+                iAssemblerMock.Verify(x => x.SetManagedReturn(It.Is<CSharpType>(y => y.ToString() == "void")), Times.AtMostOnce());
+                iAssemblerMock.Verify(x => x.SetManagedReturn(It.Is<CSharpType>(y => y.ToString() != "void")), Times.Never());
+            }
+            else
+            {
+                iAssemblerMock.Verify(x => x.SetManagedReturn(It.Is<CSharpType>(y => y.ToString() == aExpectedReturnType)));
+                iAssemblerMock.Verify(x => x.SetManagedReturn(It.Is<CSharpType>(y => y.ToString() != aExpectedReturnType)), Times.Never());
+            }
         }
 
         void CheckPInvokeParameterWasGenerated(CType aRetType, Declaration[] aParameters, string aExpectedParameterName, string aExpectedCSharpType)
@@ -423,7 +687,7 @@ namespace ToolTests
             iAssemblerMock.Verify(x => x.SuppressManagedWrapper(), aSuppressed ? Times.Once() : Times.Never());
         }
 
-        static Action<ClassGenerationTestContext> MkAct(Action<ClassGenerationTestContext> aAction)
+        static Action<ClassGenerationTests> MkAct(Action<ClassGenerationTests> aAction)
         {
             return aAction;
         }
@@ -443,6 +707,7 @@ namespace ToolTests
             public string ManagedRet;
             public string PInvokeRet;
             public bool Suppressed;
+            public string Name;
         }
 
 
@@ -453,10 +718,11 @@ namespace ToolTests
             {
                 var nativeRetType = item.NativeRet;
                 var nativeArgs = item.NativeArgs.ToArray();
+                var testName = item.Name;
 
                 bool suppressed = item.Suppressed;
                 yield return new TestCaseData(MkAct(x=>x.CheckWhetherManagedWrapperWasSuppressed(nativeRetType, nativeArgs, suppressed)))
-                    .SetName(String.Format("CheckWhetherManagedWrapperWasSuppressed({0})", suppressed));
+                    .SetName(String.Format("{0}_CheckWhetherManagedWrapperWasSuppressed({1})", testName, suppressed));
                 if (!suppressed)
                 {
                     // Check each managed argument was present with the correct type.
@@ -466,18 +732,18 @@ namespace ToolTests
                         var managedArgType = managedArg.Type;
                         yield return new TestCaseData(MkAct(x => x.CheckManagedParameterWasGenerated(nativeRetType,
                             nativeArgs, managedArgName, managedArgType)))
-                            .SetName(String.Format("CheckManagedParameterWasGenerated({0}, {1}, {2}, {3})", nativeRetType, nativeArgs, managedArgName, managedArgType));
+                            .SetName(String.Format("{0}_CheckManagedParameterWasGenerated({1}, {2}, {3}, {4})", testName, nativeRetType, nativeArgs, managedArgName, managedArgType));
                     }
 
                     // Check all the managed arguments were in the right order.
                     var managedArgOrder = item.ManagedArgs.Select(x => x.Name).ToArray();
                     yield return new TestCaseData(MkAct(x => x.CheckManagedParameterOrder(nativeRetType, nativeArgs, managedArgOrder)))
-                        .SetName(String.Format("CheckManagedParameterOrder({0}, {1}, {2})", nativeRetType, nativeArgs, managedArgOrder));
+                        .SetName(String.Format("{0}_CheckManagedParameterOrder({1}, {2}, {3})", testName, nativeRetType, nativeArgs, managedArgOrder));
 
                     // Check the managed return type was correct.
                     var managedRet = item.ManagedRet;
                     yield return new TestCaseData(MkAct(x => x.CheckManagedReturnType(nativeRetType, nativeArgs, managedRet)))
-                        .SetName(String.Format("CheckManagedReturnType({0}, {1}, {2})", nativeRetType, nativeArgs, managedRet));
+                        .SetName(String.Format("{0}_CheckManagedReturnType({1}, {2}, {3})", testName, nativeRetType, nativeArgs, managedRet));
                 }
 
                 // Check each pinvoke argument was present with the correct type.
@@ -487,18 +753,18 @@ namespace ToolTests
                     var pinvokeArgType = pinvokeArg.Type;
                     yield return new TestCaseData(
                         MkAct(x=>x.CheckPInvokeParameterWasGenerated(nativeRetType,nativeArgs, pinvokeArgName, pinvokeArgType)))
-                        .SetName(String.Format("CheckPInvokeParameterWasGenerated({0}, {1}, {2}, {3})",nativeRetType, nativeArgs, pinvokeArgName, pinvokeArgType));
+                        .SetName(String.Format("{0}_CheckPInvokeParameterWasGenerated({1}, {2}, {3}, {4})",testName, nativeRetType, nativeArgs, pinvokeArgName, pinvokeArgType));
                 }
 
                 // Check all the P/Invoke arguments were in the right order.
                 var pinvokeArgOrder = item.PInvokeArgs.Select(x=>x.Name).ToArray();
                 yield return new TestCaseData(MkAct(x=>x.CheckPInvokeParameterOrder(nativeRetType, nativeArgs, pinvokeArgOrder)))
-                    .SetName(String.Format("CheckPInvokeParameterOrder({0}, {1}, {2})", nativeRetType, nativeArgs, pinvokeArgOrder));
+                    .SetName(String.Format("{0}_CheckPInvokeParameterOrder({1}, {2}, {3})", testName, nativeRetType, nativeArgs, pinvokeArgOrder));
 
                 // Check the P/Invoke return type was correct.
                 var pinvokeRet = item.PInvokeRet;
                 yield return new TestCaseData(MkAct(x=>x.CheckPInvokeReturnType(nativeRetType, nativeArgs, pinvokeRet)))
-                    .SetName(String.Format("CheckPInvokeReturnType({0}, {1}, {2})", nativeRetType, nativeArgs, pinvokeRet));
+                    .SetName(String.Format("{0}_CheckPInvokeReturnType({1}, {2}, {3})", testName, nativeRetType, nativeArgs, pinvokeRet));
             }
         }
     }

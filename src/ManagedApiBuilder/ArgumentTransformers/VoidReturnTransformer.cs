@@ -11,7 +11,12 @@ namespace ManagedApiBuilder.ArgumentTransformers
             {
                 return false;
             }
-            aFunctionAssembler.SetManagedReturn(new CSharpType("void"));
+            if (aNativeFunction.ReturnType == null)
+            {
+                return false;
+            }
+            // Leave it at the default.
+            // aFunctionAssembler.SetManagedReturn(new CSharpType("void"));
             aNativeFunction.ConsumeReturn();
             return true;
         }

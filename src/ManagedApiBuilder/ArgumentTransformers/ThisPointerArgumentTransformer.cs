@@ -8,7 +8,7 @@ namespace ManagedApiBuilder.ArgumentTransformers
         public bool Apply(IFunctionSpecificationAnalyser aNativeFunction, IFunctionAssembler aAssembler)
         {
             if (aNativeFunction.CurrentParameterIndex != 0) return false;
-            if (!aNativeFunction.CurrentParameter.CType.MatchToPattern(new PointerCType(new NamedCType(HandleType))).IsMatch)
+            if (!aNativeFunction.CurrentParameterType.MatchToPattern(new PointerCType(new NamedCType(HandleType))).IsMatch)
             {
                 return false;
             }

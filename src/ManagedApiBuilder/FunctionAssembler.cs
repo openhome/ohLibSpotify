@@ -87,6 +87,10 @@ namespace ManagedApiBuilder
 
         public void SetManagedReturn(CSharpType aType)
         {
+            if (iManagedReturnType.ToString() != "void")
+            {
+                throw new Exception(String.Format("Return type collision. Already had: {0}, tried to add: {1}", iManagedReturnType, aType));
+            }
             iManagedReturnType = aType;
         }
 
