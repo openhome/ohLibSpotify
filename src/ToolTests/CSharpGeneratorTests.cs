@@ -225,18 +225,14 @@ namespace ToolTests
         public CType CharArrayTen { get { return new ArrayCType(10, Char); } }
         public CType CharArraySixty { get { return new ArrayCType(60, Char); } }
 
-        //            new[]{"sp_color", "sp_flavor", "sp_speed"},
-        //            new[]{"sp_person", "sp_room", "sp_item"},
-        //            new[]{"sp_file", "sp_device"},
-        //            new[]{"sp_ready_cb", "sp_finished_cb"},
-        //            new[]{
-        //                new ApiStructConfiguration{
-        //                    NativeName="sp_person",
-        //                    ManagedName="SpotifyPerson",
-        //                    ForcePublic=false,
-        //                    SuppressFunctions={"sp_person_difficult_function"}
-        //                }
-        //            },
+        // These tests are rather unusual because of the need to be strongly
+        // data-driven. GetTestData defines one entry for each native function
+        // spec that we want to generate a class from. It also specifies the
+        // expected C# specification of both the P/Invoke declaration and the
+        // managed wrapper method. These terse entries are expanded into several
+        // tests each by GenerateTestCases below. The test cases are all
+        // attached to the RunTests "test", which demultiplexes them back to
+        // the appropriate test methods.
 
         IEnumerable<TestCase> GetTestData()
         {
