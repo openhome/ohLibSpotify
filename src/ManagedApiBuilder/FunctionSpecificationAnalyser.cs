@@ -19,7 +19,8 @@ namespace ManagedApiBuilder
         void ConsumeArgument();
         void ConsumeReturn();
     }
-    class FunctionSpecificationAnalyser : IFunctionSpecificationAnalyser
+
+    public class FunctionSpecificationAnalyser : IFunctionSpecificationAnalyser
     {
         int iIndex = 0;
         readonly List<Declaration> iParameters;

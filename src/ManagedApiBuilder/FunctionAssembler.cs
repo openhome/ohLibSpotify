@@ -24,7 +24,16 @@ namespace ManagedApiBuilder
         void DecreaseIndent();
         bool IsStatic { get; set; }
     }
-    public class FunctionAssembler : IFunctionAssembler
+
+    public interface IFunctionGenerator : IFunctionAssembler
+    {
+        string GenerateWrapperMethod(string aIndent);
+        string GenerateNativeDelegateDeclaration(string aIndent);
+        string GeneratePInvokeDeclaration(string aIndent);
+        void NextArgument();
+    }
+
+    public class FunctionAssembler : IFunctionGenerator
     {
         int iIndentLevelAbove = 0;
         int iIndentLevelBelow = 0;

@@ -51,5 +51,9 @@ namespace ManagedApiBuilder
             if (IsRef) throw new Exception("Cannot use ref type as field type.");
             return GetTypeString() + " @" + aFieldName;
         }
+        public override string ToString()
+        {
+            return GetAttributeString() + GetTypeString();
+        }
     }
 }

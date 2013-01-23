@@ -18,6 +18,7 @@ namespace ManagedApiBuilder
         readonly HashSet<string> iDelegateNames;
         readonly Dictionary<string, ApiStructConfiguration> iStructConfigurations;
         readonly Dictionary<string, ApiEnumConfiguration> iEnumConfigurations;
+        IFunctionFactory iFunctionFactory;
 
         public CSharpGenerator(
             IEnumerable<string> aEnumNames,
@@ -25,7 +26,8 @@ namespace ManagedApiBuilder
             IEnumerable<string> aHandleNames,
             IEnumerable<string> aDelegateNames,
             IEnumerable<ApiStructConfiguration> aStructConfigurations,
-            IEnumerable<ApiEnumConfiguration> aEnumConfigurations)
+            IEnumerable<ApiEnumConfiguration> aEnumConfigurations,
+            IFunctionFactory aFunctionFactory)
         {
             iEnumNames = new HashSet<string>(aEnumNames);
             iStructNames = new HashSet<string>(aStructNames);
@@ -33,6 +35,7 @@ namespace ManagedApiBuilder
             iDelegateNames = new HashSet<string>(aDelegateNames);
             iStructConfigurations = aStructConfigurations.ToDictionary(x => x.NativeName);
             iEnumConfigurations = aEnumConfigurations.ToDictionary(x => x.NativeName);
+            iFunctionFactory = aFunctionFactory;
         }
 
         string ManagedNameForNativeType(string aNativeTypeName)
@@ -219,7 +222,7 @@ namespace ManagedApiBuilder
             return methodBuilder.ToString().Replace("\n", Environment.NewLine);
         }
 
-        FunctionAssembler AssembleFunction(string aFunctionName, FunctionCType aFunctionType, string aHandleName, string aMethodName)
+        IFunctionGenerator AssembleFunction(string aFunctionName, FunctionCType aFunctionType, string aHandleName, string aMethodName)
         {
             var enumNames = iEnumNames.ToDictionary(x => x, ManagedNameForNativeType);
             var structNames = iStructNames.ToDictionary(x => x, ManagedNameForNativeType);
@@ -274,8 +277,8 @@ namespace ManagedApiBuilder
                 new PointerReturnTransformer(),
                 new VoidReturnTransformer()}.Where(x=>x!=null).ToList();
 
-            var assembler = new FunctionAssembler(aFunctionName, aMethodName);
-            var nativeFunction = new FunctionSpecificationAnalyser(aFunctionType.Arguments, aFunctionType.ReturnType);
+            var assembler = iFunctionFactory.CreateAssembler(aFunctionName, aMethodName);
+            var nativeFunction = iFunctionFactory.CreateAnalyser(aFunctionType.Arguments, aFunctionType.ReturnType);
             while (nativeFunction.CurrentParameter != null || nativeFunction.ReturnType != null)
             {
                 var transformer = transformers.FirstOrDefault(x=>x.Apply(nativeFunction, assembler));
@@ -405,6 +408,25 @@ namespace ManagedApiBuilder
             }
             string visibility = config.ForcePublic ? "public" : "internal";
             return String.Format(StructTemplate, aIndent, config.ManagedName, joinedFieldStrings, visibility).Replace("\n", Environment.NewLine);
+        }
+    }
+
+    public interface IFunctionFactory
+    {
+        IFunctionGenerator CreateAssembler(string aFunctionName, string aMethodName);
+        IFunctionSpecificationAnalyser CreateAnalyser(List<Declaration> aArguments, CType aReturnType);
+    }
+
+    public class DefaultFunctionFactory : IFunctionFactory
+    {
+        public IFunctionGenerator CreateAssembler(string aFunctionName, string aMethodName)
+        {
+            return new FunctionAssembler(aFunctionName, aMethodName);
+        }
+
+        public IFunctionSpecificationAnalyser CreateAnalyser(List<Declaration> aArguments, CType aReturnType)
+        {
+            return new FunctionSpecificationAnalyser(aArguments, aReturnType);
         }
     }
 }

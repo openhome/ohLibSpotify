@@ -107,7 +107,8 @@ namespace ManagedApiBuilder
                 categorizedDeclarations.HandleTable,
                 categorizedDeclarations.FunctionTypedefTable.Keys,
                 configuration.Structs,
-                configuration.Enums);
+                configuration.Enums,
+                new DefaultFunctionFactory());
             Console.WriteLine("using System;");
             Console.WriteLine("using System.Linq;");
             Console.WriteLine("using System.Runtime.InteropServices;");

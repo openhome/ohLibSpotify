@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using ApiParser;
 using ManagedApiBuilder;
+using Moq;
 using NUnit.Framework;
 
 namespace ToolTests
@@ -17,7 +18,7 @@ namespace ToolTests
         {
             iGenerator = new CSharpGenerator(
                     new[]{"sp_color", "sp_flavor", "sp_speed"},
-                    new[]{"sp_person", "sp_room", "sp_item"},
+                    new[]{"sp_person", "sp_room", "sp_item", "sp_room_callbacks"},
                     new[]{"sp_file", "sp_device"},
                     new[]{"sp_ready_cb", "sp_finished_cb"},
                     new[]{
@@ -41,8 +42,14 @@ namespace ToolTests
                             NativeConstantPrefix = "SP_FLAVOR_",
                             ManagedConstantPrefix = ""
                         },
-                    }
+                    },
+                    MakeFunctionFactory()
                 );
+        }
+
+        protected virtual IFunctionFactory MakeFunctionFactory()
+        {
+            return new DefaultFunctionFactory();
         }
     }
 
@@ -142,6 +149,7 @@ namespace ToolTests
                 "(?s)" + anything + esc("[MarshalAs(UnmanagedType.I1)]") + @"\s*" + "public bool @lit;" + anything));
         }
     }
+
     public class WhenGeneratingAnEnumWithSomeConstants : CSharpGeneratorContext
     {
         protected string iResult;
@@ -168,9 +176,9 @@ namespace ToolTests
         }
 
         [Test]
-        public void TheEnumShouldHaveTheCorrectFlavor()
+        public void TheEnumShouldHaveTheCorrectName()
         {
-            Assert.That(iResult, Is.StringMatching(@"(?s)\s*public.*"));
+            Assert.That(iResult, Is.StringMatching(@"(?s).* Flavor\s*{.*"));
         }
 
         [Test]
@@ -190,6 +198,308 @@ namespace ToolTests
             const string any = @"\.*";
             Action<string> chk = s => Assert.That(iResult, Is.StringMatching(s));
             chk(singleLineMode + @".*" + aName + sp + "=" + sp + aValue +  sp + "," + any);
+        }
+    }
+
+    public class ClassGenerationTestContext : CSharpGeneratorContext
+    {
+        public CType Void { get { return new NamedCType("void"); } }
+        public CType Int { get { return new NamedCType("int"); } }
+        public CType Byte { get { return new NamedCType("byte"); } }
+        public CType SizeT { get { return new NamedCType("size_t"); } }
+        public CType Char { get { return new NamedCType("char"); } }
+        public CType ConstChar { get { return new NamedCType("char"){Qualifiers={"const"}}; } }
+        public CType VoidPtr { get { return new PointerCType(Void); } }
+        public CType IntPtr { get { return new PointerCType(Int); } }
+        public CType CharPtr { get { return new PointerCType(Char); } }
+        public CType ConstCharPtr { get { return new PointerCType(ConstChar); } }
+        public CType IntArray { get { return new ArrayCType(null, Int); } }
+        public CType IntArrayFive { get { return new ArrayCType(5, Int); } }
+        public CType IntArrayTen { get { return new ArrayCType(10, Int); } }
+        public CType ByteArray { get { return new ArrayCType(null, Byte); } }
+        public CType CharArray { get { return new ArrayCType(null, Char); } }
+        public CType CharArrayTen { get { return new ArrayCType(10, Char); } }
+        public CType CharArraySixty { get { return new ArrayCType(60, Char); } }
+
+        //            new[]{"sp_color", "sp_flavor", "sp_speed"},
+        //            new[]{"sp_person", "sp_room", "sp_item"},
+        //            new[]{"sp_file", "sp_device"},
+        //            new[]{"sp_ready_cb", "sp_finished_cb"},
+        //            new[]{
+        //                new ApiStructConfiguration{
+        //                    NativeName="sp_person",
+        //                    ManagedName="SpotifyPerson",
+        //                    ForcePublic=false,
+        //                    SuppressFunctions={"sp_person_difficult_function"}
+        //                }
+        //            },
+
+        TestCase[] GetTestData()
+        {
+            var data = new []{
+                new TestCase{
+                    // void xxx(const char * alpha);
+                    NativeRet = Void,
+                    NativeArgs = { Decl("alpha", ConstCharPtr) },
+                    ManagedArgs = { new ArgInfo {Name="alpha", Type="string"} },
+                    PInvokeArgs = { new ArgInfo {Name="alpha", Type="IntPtr"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // int xxx(char * buffer, size_t buffer_len);
+                    // Yes, we're testing with buffer_len as size_t but the return type int.
+                    // This is how sp_session_remembered_user is declared.
+                    NativeRet = Int,
+                    NativeArgs = { Decl("buffer", CharPtr), Decl("buffer_len", SizeT) },
+                    ManagedArgs = { },
+                    PInvokeArgs = { new ArgInfo {Name="buffer", Type="IntPtr"}, new ArgInfo{Name="buffer_len", Type="UIntPtr"} },
+                    ManagedRet = "string",
+                    PInvokeRet = "int",
+                },
+                new TestCase{
+                    // void xxx(const char * alpha);
+                    NativeRet = Void,
+                    NativeArgs = { Decl("alpha", ConstCharPtr) },
+                    ManagedArgs = { new ArgInfo {Name="alpha", Type="string"} },
+                    PInvokeArgs = { new ArgInfo {Name="alpha", Type="IntPtr"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(byte alpha[]);
+                    // ByteArrayArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("alpha", ByteArray) },
+                    Suppressed = true,
+                    PInvokeArgs = { new ArgInfo {Name="alpha", Type="IntPtr"} },
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(sp_room_callbacks * callbacks);
+                    // CallbackStructArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("callbacks", new PointerCType(new NamedCType("sp_room_callbacks"))) },
+                    Suppressed = true,
+                    PInvokeArgs = { new ArgInfo {Name="callbacks", Type="IntPtr"} },
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(sp_ready_cb * ready_callback);
+                    // FunctionPointerArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("ready_callback", new PointerCType(new NamedCType("sp_ready_cb"))) },
+                    Suppressed = true,
+                    PInvokeArgs = { new ArgInfo {Name="ready_callback", Type="sp_ready_cb"} },
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(sp_device * device);
+                    // HandleArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("device", new PointerCType(new NamedCType("sp_device"))) },
+                    ManagedArgs = { new ArgInfo {Name="device", Type="Device"} },
+                    PInvokeArgs = { new ArgInfo {Name="device", Type="IntPtr"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+                new TestCase{
+                    // void xxx(sp_device ** devices, int num_devices);
+                    // HandleArrayArgumentTransformer
+                    NativeRet = Void,
+                    NativeArgs = { Decl("devices", new PointerCType(new PointerCType(new NamedCType("sp_device")))), Decl("num_devices", Int) },
+                    ManagedArgs = { new ArgInfo {Name="devices", Type="Device[]"} },
+                    PInvokeArgs = { new ArgInfo {Name="devices", Type="IntPtr"}, new ArgInfo {Name="num_devices", Type="int"} },
+                    ManagedRet = "void",
+                    PInvokeRet = "void",
+                },
+            };
+            return data;
+        }
+
+        public KeyValuePair<string, FunctionCType> Function(string aName, CType aReturnType, Declaration[] aArgTypes)
+        {
+            return new KeyValuePair<string, FunctionCType>(aName, FuncType(aReturnType, aArgTypes));
+        }
+        public FunctionCType FuncType(CType aReturnType, Declaration[] aArgTypes)
+        {
+            var func = new FunctionCType(aReturnType);
+            func.Arguments.AddRange(aArgTypes);
+            return func;
+        }
+        public Declaration Decl(string aName, CType aType)
+        {
+            return new Declaration{Name = aName, CType = aType};
+        }
+
+        protected Mock<IFunctionGenerator> iAssemblerMock;
+        protected IFunctionGenerator iAssembler;
+        protected List<string> iManagedParameterOrder;
+        protected List<string> iPInvokeParameterOrder;
+
+        [SetUp]
+        public void ResetParameterOrder()
+        {
+            iManagedParameterOrder = new List<string>();
+            iPInvokeParameterOrder = new List<string>();
+        }
+
+        protected override IFunctionFactory MakeFunctionFactory()
+        {
+            iAssemblerMock = new Mock<IFunctionGenerator>();
+            iAssembler = iAssemblerMock.Object;
+            var factory = new Mock<IFunctionFactory>();
+            factory.Setup(x => x.CreateAssembler(It.IsAny<string>(), It.IsAny<string>())).Returns((string nativeName, string managedName)=>iAssembler);
+            factory.Setup(x => x.CreateAnalyser(It.IsAny<List<Declaration>>(), It.IsAny<CType>())).Returns((
+                List<Declaration> decls, CType retType)=>new FunctionSpecificationAnalyser(decls, retType));
+            iAssemblerMock
+                .Setup(x=>x.AddManagedParameter(It.IsAny<string>(), It.IsAny<CSharpType>()))
+                .Callback((string name, CSharpType t) => iManagedParameterOrder.Add(name));
+            iAssemblerMock
+                .Setup(x=>x.AddPInvokeParameter(It.IsAny<CSharpType>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Callback((CSharpType t, string name, string expr) => iPInvokeParameterOrder.Add(name));
+            return factory.Object;
+        }
+
+        [TestCaseSource("GenerateTestCases")]
+        public void RunTestCases(Action<ClassGenerationTestContext> aAction)
+        {
+            aAction(this);
+        }
+
+        void GenerateClass(CType aRetType, Declaration[] aParameters)
+        {
+            iGenerator.GenerateCSharpClass("", "sp_file", new[]{
+                Function("sp_file_do_something", aRetType, aParameters)
+            });
+        }
+
+        void CheckManagedParameterWasGenerated(CType aRetType, Declaration[] aParameters, string aExpectedParameterName, string aExpectedCSharpType)
+        {
+            GenerateClass(aRetType, aParameters);
+            iAssemblerMock.Verify(x => x.AddManagedParameter(aExpectedParameterName, It.Is<CSharpType>(y => y.ToString() == aExpectedCSharpType)));
+        }
+
+        void CheckManagedParameterOrder(CType aRetType, Declaration[] aParameters, string[] aOrder)
+        {
+            GenerateClass(aRetType, aParameters);
+            Assert.That(iManagedParameterOrder, Is.EqualTo(aOrder));
+        }
+
+        void CheckManagedReturnType(CType aRetType, Declaration[] aParameters, string aExpectedReturnType)
+        {
+            GenerateClass(aRetType, aParameters);
+            iAssemblerMock.Verify(x => x.SetManagedReturn(It.Is<CSharpType>(y=>y.ToString()==aExpectedReturnType)));
+        }
+
+        void CheckPInvokeParameterWasGenerated(CType aRetType, Declaration[] aParameters, string aExpectedParameterName, string aExpectedCSharpType)
+        {
+            GenerateClass(aRetType, aParameters);
+            iAssemblerMock.Verify(x => x.AddPInvokeParameter(It.Is<CSharpType>(y => y.ToString() == aExpectedCSharpType), aExpectedParameterName, It.IsAny<string>()));
+        }
+
+        void CheckPInvokeParameterOrder(CType aRetType, Declaration[] aParameters, string[] aOrder)
+        {
+            GenerateClass(aRetType, aParameters);
+            Assert.That(iPInvokeParameterOrder, Is.EqualTo(aOrder));
+        }
+
+        void CheckPInvokeReturnType(CType aRetType, Declaration[] aParameters, string aExpectedReturnType)
+        {
+            GenerateClass(aRetType, aParameters);
+            if (aExpectedReturnType == "void")
+            {
+                iAssemblerMock.Verify(x => x.SetPInvokeReturn(It.IsAny<CSharpType>(), It.IsAny<string>()), Times.Never());
+            }
+            else
+            {
+                iAssemblerMock.Verify(x => x.SetPInvokeReturn(It.Is<CSharpType>(y => y.ToString() == aExpectedReturnType), It.IsAny<string>()));
+            }
+        }
+
+        void CheckWhetherManagedWrapperWasSuppressed(CType aRetType, Declaration[] aParameters, bool aSuppressed)
+        {
+            GenerateClass(aRetType, aParameters);
+            iAssemblerMock.Verify(x => x.SuppressManagedWrapper(), aSuppressed ? Times.Once() : Times.Never());
+        }
+
+        static Action<ClassGenerationTestContext> MkAct(Action<ClassGenerationTestContext> aAction)
+        {
+            return aAction;
+        }
+
+
+        class ArgInfo
+        {
+            public string Name;
+            public string Type;
+        }
+        class TestCase
+        {
+            public List<Declaration> NativeArgs = new List<Declaration>();
+            public List<ArgInfo> ManagedArgs = new List<ArgInfo>();
+            public List<ArgInfo> PInvokeArgs = new List<ArgInfo>();
+            public CType NativeRet;
+            public string ManagedRet;
+            public string PInvokeRet;
+            public bool Suppressed;
+        }
+
+
+        public IEnumerable<TestCaseData> GenerateTestCases()
+        {
+            var data = GetTestData();
+            foreach (var item in data)
+            {
+                var nativeRetType = item.NativeRet;
+                var nativeArgs = item.NativeArgs.ToArray();
+
+                bool suppressed = item.Suppressed;
+                yield return new TestCaseData(MkAct(x=>x.CheckWhetherManagedWrapperWasSuppressed(nativeRetType, nativeArgs, suppressed)))
+                    .SetName(String.Format("CheckWhetherManagedWrapperWasSuppressed({0})", suppressed));
+                if (!suppressed)
+                {
+                    // Check each managed argument was present with the correct type.
+                    foreach (var managedArg in item.ManagedArgs)
+                    {
+                        var managedArgName = managedArg.Name;
+                        var managedArgType = managedArg.Type;
+                        yield return new TestCaseData(MkAct(x => x.CheckManagedParameterWasGenerated(nativeRetType,
+                            nativeArgs, managedArgName, managedArgType)))
+                            .SetName(String.Format("CheckManagedParameterWasGenerated({0}, {1}, {2}, {3})", nativeRetType, nativeArgs, managedArgName, managedArgType));
+                    }
+
+                    // Check all the managed arguments were in the right order.
+                    var managedArgOrder = item.ManagedArgs.Select(x => x.Name).ToArray();
+                    yield return new TestCaseData(MkAct(x => x.CheckManagedParameterOrder(nativeRetType, nativeArgs, managedArgOrder)))
+                        .SetName(String.Format("CheckManagedParameterOrder({0}, {1}, {2})", nativeRetType, nativeArgs, managedArgOrder));
+
+                    // Check the managed return type was correct.
+                    var managedRet = item.ManagedRet;
+                    yield return new TestCaseData(MkAct(x => x.CheckManagedReturnType(nativeRetType, nativeArgs, managedRet)))
+                        .SetName(String.Format("CheckManagedReturnType({0}, {1}, {2})", nativeRetType, nativeArgs, managedRet));
+                }
+
+                // Check each pinvoke argument was present with the correct type.
+                foreach (var pinvokeArg in item.PInvokeArgs)
+                {
+                    var pinvokeArgName = pinvokeArg.Name;
+                    var pinvokeArgType = pinvokeArg.Type;
+                    yield return new TestCaseData(
+                        MkAct(x=>x.CheckPInvokeParameterWasGenerated(nativeRetType,nativeArgs, pinvokeArgName, pinvokeArgType)))
+                        .SetName(String.Format("CheckPInvokeParameterWasGenerated({0}, {1}, {2}, {3})",nativeRetType, nativeArgs, pinvokeArgName, pinvokeArgType));
+                }
+
+                // Check all the P/Invoke arguments were in the right order.
+                var pinvokeArgOrder = item.PInvokeArgs.Select(x=>x.Name).ToArray();
+                yield return new TestCaseData(MkAct(x=>x.CheckPInvokeParameterOrder(nativeRetType, nativeArgs, pinvokeArgOrder)))
+                    .SetName(String.Format("CheckPInvokeParameterOrder({0}, {1}, {2})", nativeRetType, nativeArgs, pinvokeArgOrder));
+
+                // Check the P/Invoke return type was correct.
+                var pinvokeRet = item.PInvokeRet;
+                yield return new TestCaseData(MkAct(x=>x.CheckPInvokeReturnType(nativeRetType, nativeArgs, pinvokeRet)))
+                    .SetName(String.Format("CheckPInvokeReturnType({0}, {1}, {2})", nativeRetType, nativeArgs, pinvokeRet));
+            }
         }
     }
 }
