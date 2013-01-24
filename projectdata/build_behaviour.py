@@ -15,6 +15,8 @@ class Builder(OpenHomeBuilder):
     test_location = 'build/bin/{configuration}/{assembly}.dll'
     def setup(self):
         self.set_nunit_location('dependencies/nuget/NUnit.Runners.2.6.1/tools/nunit-console-x86.exe')
+        if self.system != 'Windows':
+            self.shell('mono --version')
 
     def clean(self):
         self.msbuild('src/ohLibSpotify.sln', target='Clean', platform=self.platform, configuration=self.configuration)
