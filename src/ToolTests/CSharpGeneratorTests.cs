@@ -708,16 +708,22 @@ namespace ToolTests
 
         public IEnumerable<TestCaseData> GenerateTestCases()
         {
+            // Note: This used to be a generator (yield-return) method, but
+            // Mono's C# compiler before version 2.11.2 is broken and makes
+            // a mess of the results.
+            // See Xamarin bug 4641.
+            List<TestCaseData> testcases = new List<TestCaseData>();
             var data = GetTestData();
             foreach (var item in data)
             {
                 var nativeRetType = item.NativeRet;
                 var nativeArgs = item.NativeArgs.ToArray();
                 var testName = item.Name;
+                Console.WriteLine("nativeArgs: {0}", String.Join(", ", nativeArgs.Select(x=>x.ToString())));
 
                 bool suppressed = item.Suppressed;
-                yield return new TestCaseData(MkAct(x=>x.CheckWhetherManagedWrapperWasSuppressed(nativeRetType, nativeArgs, suppressed)))
-                    .SetName(String.Format("{0}_CheckWhetherManagedWrapperWasSuppressed({1})", testName, suppressed));
+                testcases.Add(new TestCaseData(MkAct(x=>x.CheckWhetherManagedWrapperWasSuppressed(nativeRetType, nativeArgs, suppressed)))
+                    .SetName(String.Format("{0}_CheckWhetherManagedWrapperWasSuppressed({1})", testName, suppressed)));
                 if (!suppressed)
                 {
                     // Check each managed argument was present with the correct type.
@@ -725,20 +731,20 @@ namespace ToolTests
                     {
                         var managedArgName = managedArg.Name;
                         var managedArgType = managedArg.Type;
-                        yield return new TestCaseData(MkAct(x => x.CheckManagedParameterWasGenerated(nativeRetType,
+                        testcases.Add(new TestCaseData(MkAct(x => x.CheckManagedParameterWasGenerated(nativeRetType,
                             nativeArgs, managedArgName, managedArgType)))
-                            .SetName(String.Format("{0}_CheckManagedParameterWasGenerated({1}, {2}, {3}, {4})", testName, nativeRetType, nativeArgs, managedArgName, managedArgType));
+                            .SetName(String.Format("{0}_CheckManagedParameterWasGenerated({1}, {2}, {3}, {4})", testName, nativeRetType, nativeArgs, managedArgName, managedArgType)));
                     }
 
                     // Check all the managed arguments were in the right order.
                     var managedArgOrder = item.ManagedArgs.Select(x => x.Name).ToArray();
-                    yield return new TestCaseData(MkAct(x => x.CheckManagedParameterOrder(nativeRetType, nativeArgs, managedArgOrder)))
-                        .SetName(String.Format("{0}_CheckManagedParameterOrder({1}, {2}, {3})", testName, nativeRetType, nativeArgs, managedArgOrder));
+                    testcases.Add(new TestCaseData(MkAct(x => x.CheckManagedParameterOrder(nativeRetType, nativeArgs, managedArgOrder)))
+                        .SetName(String.Format("{0}_CheckManagedParameterOrder({1}, {2}, {3})", testName, nativeRetType, nativeArgs, managedArgOrder)));
 
                     // Check the managed return type was correct.
                     var managedRet = item.ManagedRet;
-                    yield return new TestCaseData(MkAct(x => x.CheckManagedReturnType(nativeRetType, nativeArgs, managedRet)))
-                        .SetName(String.Format("{0}_CheckManagedReturnType({1}, {2}, {3})", testName, nativeRetType, nativeArgs, managedRet));
+                    testcases.Add(new TestCaseData(MkAct(x => x.CheckManagedReturnType(nativeRetType, nativeArgs, managedRet)))
+                        .SetName(String.Format("{0}_CheckManagedReturnType({1}, {2}, {3})", testName, nativeRetType, nativeArgs, managedRet)));
                 }
 
                 // Check each pinvoke argument was present with the correct type.
@@ -746,21 +752,22 @@ namespace ToolTests
                 {
                     var pinvokeArgName = pinvokeArg.Name;
                     var pinvokeArgType = pinvokeArg.Type;
-                    yield return new TestCaseData(
+                    testcases.Add(new TestCaseData(
                         MkAct(x=>x.CheckPInvokeParameterWasGenerated(nativeRetType,nativeArgs, pinvokeArgName, pinvokeArgType)))
-                        .SetName(String.Format("{0}_CheckPInvokeParameterWasGenerated({1}, {2}, {3}, {4})",testName, nativeRetType, nativeArgs, pinvokeArgName, pinvokeArgType));
+                        .SetName(String.Format("{0}_CheckPInvokeParameterWasGenerated({1}, {2}, {3}, {4})",testName, nativeRetType, nativeArgs, pinvokeArgName, pinvokeArgType)));
                 }
 
                 // Check all the P/Invoke arguments were in the right order.
                 var pinvokeArgOrder = item.PInvokeArgs.Select(x=>x.Name).ToArray();
-                yield return new TestCaseData(MkAct(x=>x.CheckPInvokeParameterOrder(nativeRetType, nativeArgs, pinvokeArgOrder)))
-                    .SetName(String.Format("{0}_CheckPInvokeParameterOrder({1}, {2}, {3})", testName, nativeRetType, nativeArgs, pinvokeArgOrder));
+                testcases.Add(new TestCaseData(MkAct(x=>x.CheckPInvokeParameterOrder(nativeRetType, nativeArgs, pinvokeArgOrder)))
+                    .SetName(String.Format("{0}_CheckPInvokeParameterOrder({1}, {2}, {3})", testName, nativeRetType, nativeArgs, pinvokeArgOrder)));
 
                 // Check the P/Invoke return type was correct.
                 var pinvokeRet = item.PInvokeRet;
-                yield return new TestCaseData(MkAct(x=>x.CheckPInvokeReturnType(nativeRetType, nativeArgs, pinvokeRet)))
-                    .SetName(String.Format("{0}_CheckPInvokeReturnType({1}, {2}, {3})", testName, nativeRetType, nativeArgs, pinvokeRet));
+                testcases.Add(new TestCaseData(MkAct(x=>x.CheckPInvokeReturnType(nativeRetType, nativeArgs, pinvokeRet)))
+                    .SetName(String.Format("{0}_CheckPInvokeReturnType({1}, {2}, {3})", testName, nativeRetType, nativeArgs, pinvokeRet)));
             }
+            return testcases;
         }
     }
 }
