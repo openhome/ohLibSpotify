@@ -238,6 +238,7 @@ Global
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-armv6.ActiveCfg = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-armv6.Build.0 = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-armv7.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-armv7.Build.0 = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-x86.ActiveCfg = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|iOs-x86.Build.0 = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-armv5.ActiveCfg = Release|Any CPU
@@ -245,9 +246,11 @@ Global
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-armv6.ActiveCfg = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-armv6.Build.0 = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-armv7.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-armv7.Build.0 = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-x64.ActiveCfg = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-x64.Build.0 = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-x86.ActiveCfg = Release|Any CPU
+		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Linux-x86.Build.0 = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Mac-x64.ActiveCfg = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Mac-x64.Build.0 = Release|Any CPU
 		{90D9B4DC-2581-4443-8E3D-7381E5227EB3}.Release|Mac-x86.ActiveCfg = Release|Any CPU
