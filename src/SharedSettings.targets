@@ -14,5 +14,7 @@
     <IntermediateOutputPath>$(TopOutputPath)\obj\$(Configuration)</IntermediateOutputPath>
     <PackageOutputPath>$(MSBuildProjectDirectory)\..\..\build\packages</PackageOutputPath>
     <DependenciesPath>$(MSBuildProjectDirectory)\..\..\dependencies</DependenciesPath>
+    <CliExecutionEngine Condition=" '$(OS)' == 'Windows_NT' "></CliExecutionEngine>
+    <CliExecutionEngine Condition=" '$(OS)' != 'Windows_NT' ">mono</CliExecutionEngine>
   </PropertyGroup>
 </Project>
