@@ -30,4 +30,4 @@ class Builder(OpenHomeBuilder):
     def publish(self):
         self.publish_package(
                 'ohLibSpotify-{platform}-{configuration}.tar.gz',
-                'ohLibSpotify/ohLibSpotify-{version}-AnyPlatform-{configuration}.tar.gz')
+                'ohLibSpotify/ohLibSpotify-{version}-{platform}-{configuration}.tar.gz')
