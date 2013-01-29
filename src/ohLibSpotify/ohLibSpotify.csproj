@@ -142,11 +142,12 @@
     <Exec Command="$(CliExecutionEngine) $(OutputPath)\ManagedApiBuilder.exe $(OutputPath)\parsed-api.json api-config.json &gt; GeneratedCode.cs" />
   </Target>
   <Target Name="BeforeBuild" DependsOnTargets="GenerateCode" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
+  <PropertyGroup>
+    <PackageName>ohLibSpotify-$(Platform)-$(Configuration)</PackageName>
+    <PackageFilePatterns>ohLibSpotify.dll ohLibSpotify.*db</PackageFilePatterns>
+  </PropertyGroup>
   <Target Name="AfterBuild">
+    <MakeDir Directories="$(PackageOutputPath)" />
+    <Exec Command="..\..\go make_binball -b $(OutputPath) -p $(PackageName)/ $(PackageOutputPath)/$(PackageName).tar.gz $(PackageFilePatterns)" />
   </Target>
-  -->
 </Project>
