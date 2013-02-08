@@ -160,6 +160,10 @@ namespace SpotifySharp
 
         public string GetString(int aStringLengthBuffer)
         {
+            if (aStringLengthBuffer < 0)
+            {
+                return null;
+            }
             return Value; // TODO: Include \0 characters.
         }
     }
