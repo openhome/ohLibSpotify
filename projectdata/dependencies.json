@@ -30,5 +30,10 @@
         "unpack-location": "${platform-settings[unpack]}",
         "dest": "dependencies/${archive-platform}/${unpack-location}",
         "allow-cache": true
-    }
+    },
+    { "name":"MSBuildTasks",        "version":"1.4.0.45",    "type":"exnuget" },
+    { "name":"Moq",                 "version":"4.0.10827",   "type":"exnuget" },
+    { "name":"NUnit",               "version":"2.6.2",       "type":"exnuget" },
+    { "name":"NUnit.Runners",       "version":"2.6.1",       "type":"exnuget" },
+    { "name":"Newtonsoft.Json",     "version":"4.5.11",      "type":"exnuget" }
 ]
